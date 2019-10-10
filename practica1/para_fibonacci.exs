@@ -31,19 +31,30 @@ defmodule Fib do
 	def y_of(n) do
 		:math.pow((1 - @golden_n) / 2, n)
 	end
-end	
+end
 
 defmodule Cliente do
 
-  def launch(pid, op, 0) do
-	send(pid, [op, 1..36])
+  def launch(pid, op, 1) do
+		t1 = Time.utc_now()
+
+	send(pid, {self, op, 1..36, 1})
+	receive do
+		{:result, l} -> l
+											t2 = Time.utc_now()
+											#Medición total
+											aislado = Time.diff(t2,t1,:millisecond)
+											IO.puts(aislado)
+											IO.puts("Cliente recibido")
+										IO.inspect l
+	end
   end
 
-  def launch(pid, op, n) when n != 0 do
-	send(pid, [op, 1..36])
+  def launch(pid, op, n) when n != 1 do
+	send(pid, [self, op, 1..36, n])
 	launch(pid, op, n - 1)
-  end 
-  
+  end
+
   def genera_workload(server_pid, escenario, time) do
 	cond do
 		time <= 3 ->  launch(server_pid, :fib, 8); Process.sleep(2000)
@@ -63,7 +74,7 @@ defmodule Cliente do
 	Process.sleep(2000)
   	genera_workload(server_pid, escenario)
   end
-  
+
 
   def cliente(server_pid, tipo_escenario) do
   	case tipo_escenario do
