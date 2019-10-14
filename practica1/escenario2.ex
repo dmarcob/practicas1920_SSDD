@@ -4,15 +4,15 @@
 # FECHA: 27-09-2019
 # DESCRIPCIÓN:
 
-defmodule EscenarioUno do
+defmodule EscenarioDos do
 	def inicializarCliente() do
 		#registrarse
 		#Process.register(self(), :client)
 		#añadir cookie
 
 		#Conectar con maquina servidor
-		Cliente.cliente({:server,:"servidor@127.0.0.1"},:uno)
-		#IO.puts("cliente ya ha pedido")
+		Cliente.cliente({:server,:"servidor@127.0.0.1"},:dos)
+		IO.puts("cliente ya ha pedido")
 	end
 
 
@@ -33,8 +33,19 @@ defmodule EscenarioUno do
 		                          t2 = Time.utc_now()
 		                          #Medición aislada
 		                          aislado = Time.diff(t2,t1,:millisecond)
-															IO.puts(aislado)
+															IO.puts("#{aislado},1")
+															IO.puts("Servidor mandado-->")
 															send(pid,{:result,resultado})
+
+    {pid,:fib,rango,num} -> spawn( fn ->
+                          		t1 = Time.utc_now()
+                          		resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
+                          		t2 = Time.utc_now()
+                          		#Medición aislada
+                          		aislado = Time.diff(t2,t1,:millisecond)
+															IO.puts(aislado) end)
+
+
 
     end
     servidor()

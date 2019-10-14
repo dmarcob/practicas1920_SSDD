@@ -36,22 +36,17 @@ end
 defmodule Cliente do
 
   def launch(pid, op, 1) do
-		t1 = Time.utc_now()
 
 	send(pid, {self, op, 1..36, 1})
 	receive do
 		{:result, l} -> l
-											t2 = Time.utc_now()
-											#Medición total
-											aislado = Time.diff(t2,t1,:millisecond)
-											IO.puts(aislado)
-											IO.puts("Cliente recibido")
-										IO.inspect l
+											IO.puts("Cliente recibido--->")
+											IO.inspect l
 	end
   end
 
   def launch(pid, op, n) when n != 1 do
-	send(pid, [self, op, 1..36, n])
+	send(pid, {self, op, 1..36, n})
 	launch(pid, op, n - 1)
   end
 
@@ -67,9 +62,19 @@ defmodule Cliente do
 
   def genera_workload(server_pid, escenario) do
   	if escenario == 1 do
+		IO.puts("ESCENARIO1")
+		t1_e1 = Time.utc_now()
 		launch(server_pid, :fib, 1)
+		t2_e1 = Time.utc_now()
+		tiempoTotal1 = Time.diff(t2_e1,t1_e1,:millisecond)
+	  IO.puts("Tiempo total respuesta: #{tiempoTotal1}ms")
 	else
+		IO.puts("ESCENARIO2")
+		t1_e2= Time.utc_now()
 		launch(server_pid, :fib, 4)
+		t2_e2 = Time.utc_now()
+		tiempoTotal2 = Time.diff(t2_e2,t1_e2,:millisecond)
+	  IO.puts("Tiempo total respuesta: #{tiempoTotal2}ms")
 	end
 	Process.sleep(2000)
   	genera_workload(server_pid, escenario)
