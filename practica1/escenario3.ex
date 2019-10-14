@@ -4,14 +4,14 @@
 # FECHA: 27-09-2019
 # DESCRIPCIÓN:
 
-defmodule EscenarioDos do
+defmodule EscenarioTres do
 	def inicializarCliente() do
 		#registrarse
 		#Process.register(self(), :client)
 		#añadir cookie
 
 		#Conectar con maquina servidor
-		Cliente.cliente({:server,:"servidor@127.0.0.1"},:dos)
+		Cliente.cliente({:server,:"servidor@127.0.0.1"},:tres)
 		IO.puts("cliente ya ha pedido")
 	end
 
@@ -26,28 +26,25 @@ defmodule EscenarioDos do
     servidor()
   end
 
-  def servidor() do
+  def master() do
+
+		#Número de workers y nucleos disponible por worker.
+		workers = [:"node1@127.0.0.1": 4, :"node2@127.0.0.1": 4]
+
     receive do
-	  {pid,:fib,rango,1}  -> 	  t1 = Time.utc_now()
+	  {pid,:fib,rango,num}  ->
+															asignar()
+
+
+															t1 = Time.utc_now()
 		                          resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
 		                          t2 = Time.utc_now()
 		                          #Medición aislada
 		                          tiempoAislado = Time.diff(t2,t1,:millisecond)
-															IO.puts("#{aislado},1")
+															IO.puts("#{tiempoAislado}ms")
 															IO.puts("Servidor mandado-->")
 															send(pid,{:result,resultado, tiempoAislado})
-
-    {pid,:fib,rango,num} -> spawn( fn ->
-                          		t1 = Time.utc_now()
-                          		resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
-                          		t2 = Time.utc_now()
-                          		#Medición aislada
-                          		aislado = Time.diff(t2,t1,:millisecond)
-															IO.puts(aislado) end)
-
-
-
     end
-    servidor()
+    master()
   end
 end
