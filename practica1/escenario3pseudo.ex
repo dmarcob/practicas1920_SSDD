@@ -4,103 +4,138 @@
 # FECHA: 27-09-2019
 # DESCRIPCIÓN:
 
-//agnadir elementos a lista con [] ++ []
-//sacar primero de la lista hd([])
-//quitar primero de la lista [] = tl([])
-//tamagno de una lista length([])
+#agnadir elementos a lista con [] ++ []
+#sacar primero de la lista hd([])
+#quitar primero de la lista [] = tl([])
+#tamagno de una lista length([])
 
 defmodule EscenarioTres do
-	def inicializarCliente() do
-		#registrarse
-		#Process.register(self(), :client)
+	def inicializarCliente(pid_m) do
 		#añadir cookie
-
-		#Conectar con maquina servidor
-		Cliente.cliente({:server,:"servidor@127.0.0.1"},:tres)
-		IO.puts("cliente ya ha pedido")
+		#Conectar con maquina master
+		Node.connect(pid_m)
+		Cliente.cliente({:server,pid_m},:tres)
+		IO.puts("cliente inicializado...")
 	end
 
-
-
-	def inicializarServidor() do
+	def inicializarMaster(pid_pool) do
     #registrarse
     Process.register(self(), :server)
     #añadir cookie
     #llamar a Servidor
-		IO.puts("SERVIDOR ACTIVO")
-    servidor()
+		IO.puts("MASTER ACTIVO")
+    master(pid_pool,[])
+  end
+
+	def inicializarWorkers([], workerspid,pid_pool) do
+
+	end
+
+	def inicializarWorkers(workers, workerspid, pid_pool) do
+		#lanzamos 4 threads remotos
+		pid1 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
+		pid2 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
+		pid3 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
+		pid4 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
+		IO.puts("#{Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])}")
+		IO.puts("#{pid2}")
+		IO.puts("#{pid3}")
+		IO.puts("#{pid4}")
+		inicializarWorkers(tl(workers), workerspid ++ [pid1] ++ [pid2] ++ [pid3] ++ [pid4], pid_pool)
+	end
+
+	def inicializarPool(pid_m, workers) do
+		#registrarse
+    Process.register(self(), :pool)
+		#añadir cookie
+		#Conectar con maquina master
+		Node.connect(pid_m)
+    #llamar a Servidor
+		IO.puts("POOL ACTIVO")
+		#declaracion de la informacion respectiva al pool de recursos
+		#,:"worker3@127.0.0.2",:"worker4@127.0.0.2", :"worker5@127.0.0.3",:"worker6@127.0.0.3",:"worker7@127.0.0.3",:"worker8@127.0.0.3"
+		workerspid = []
+		IO.puts("inicializando workers...")
+		inicializarWorkers(workers, workerspid, self())
+		IO.inspect workerspid
+		IO.puts("inicializando pool...")
+    poolWorkers(pid_m, workerspid, 0)
+
+	end
+
+	def inicializarWorker(pid_m, pid_pool) do
+    #añadir cookie
+		#conectar con MASTER
+		Node.connect(pid_m)
+    #llamar a Servidor
+		IO.puts("WORKER ACTIVO")
+    #worker(pid_pool)
   end
 
 
-  //////////////////////////////////////////////
-  ///////////////////MASTER/////////////////////
-  //////////////////////////////////////////////
-  def master() do
-
-    pidPool = pool@127.0.0.1
-    //RECIBE 1 Fibonacci a realizar
+  #//////////////////////////////////////////////
+  #///////////////////MASTER/////////////////////
+  #//////////////////////////////////////////////
+  def master(pid_pool,listaPendientes) do
+    #RECIBE 1 Fibonacci a realizar
     receive do
-	  {pid,:fib,rango,num}  ->
+	  {pid,op,rango,num}  ->
 
-															//SEND PETICION DE WORKER A POOL DE WORKERS
-                              send(pidPool, {self,:peticion})
-
-                              //RECIEVE DE POOL DE WORKERS A QUE WORKER MANDAR LA TAREA
-                              //SI HAY WORKERS DISPONIBLES, LE MANDA EL FIBONACCI
-                              //SI NO HAY WORKERS DISPONIBLES SE QUEDA ESPERANDO
-                              recieve do
-                              {pidWorker} -> send(pidWorker, {pid,pidPool,:fib,rango,num})
+				#//SEND PETICION DE WORKER A POOL DE WORKERS
+				IO.puts("")
+        send({:pool,pid_pool}, {:peticion})
+				#AGNADE A LA LISTA DE ESPERA LA PETICION HASTA QUE RECIBA UN WORKER PARA MANDARLA
+				master(pid_pool, listaPendientes ++ [{pid,op,rango,num}])
+		{pidWorker} ->
+				#recibe worker
+				send(pidWorker, hd(listaPendientes))
+				master(pid_pool, tl(listaPendientes))
     end
-    master()
   end
 
-//////////////////////////////////////////////
-///////////////////WORKER/////////////////////
-//////////////////////////////////////////////
-  def worker() do
+#//////////////////////////////////////////////
+#///////////////////WORKER/////////////////////
+#//////////////////////////////////////////////
+  def worker(pid_pool) do
+	  receive do
+	  {pid,:fib,rango,num}  -> 	  spawn( fn ->
+	                            resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
+															IO.inspect resultado
+	                            #//se comunica al pool de workers de que hemos terminado
+	                            send({:pool,pid_pool}, {self(),:fin}) end)
 
-  receive do
-  {pid_m,pid_pool:fib,rango,num}  -> 	  spawn( fn ->
-                            resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
-                            //se comunica al pool de workers de que hemos terminado
-                            send(pid_pool, {self,:fin})
-
-  {pid_m,pid_pool,:fib_tr,rango,num} -> spawn( fn ->
-                            resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
-                            //se comunica al pool de workers de que hemos terminado
-                            send(pid_pool, {self,:fin})
-
-    end
-    worker()
+	  {pid,:fib_tr,rango,num} -> spawn( fn ->
+	                            resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
+															IO.inspect resultado
+	                            #//se comunica al pool de workers de que hemos terminado
+	                            send({:pool,pid_pool}, {self(),:fin}) end)
+	  end
+    worker(pid_pool)
   end
 
-  //////////////////////////////////////////////
-  ///////////////////POOL/////////////////////
-  //////////////////////////////////////////////
-  def poolWorkers() do
+  #//////////////////////////////////////////////
+  #///////////////////POOL/////////////////////
+  #//////////////////////////////////////////////
+  def poolWorkers(pid_m, workers, enEspera) do
 
-  #pids de los workers.
-  workers = [:"worker1@127.0.0.2",:"worker2@127.0.0.2",:"worker3@127.0.0.2",:"worker4@127.0.0.2", :"worker5@127.0.0.3",:"worker6@127.0.0.3",:"worker7@127.0.0.3",:"worker8@127.0.0.3"]
-  espera = 0
-	pid_m =
     receive do
-    {pid_m, :peticion}  ->
+    {:peticion}  ->
                   if length(workers)>0 do
-                  	send(pid_m, {hd(workers)})
-										workers = tl(workers)
+                  	send({:server,pid_m}, {hd(workers)})
+										poolWorkers(pid_m, tl(workers), enEspera)
 									else
-										espera = espera+1
+										poolWorkers(pid_m, workers, enEspera-1)
 									end
 
     {pid_w, :fin} ->
-                  if espera>0 do
-										send(pid_m, {pid_w})
-										espera = espera - 1
+                  if enEspera>0 do
+										send({:server,pid_m}, {pid_w})
+										poolWorkers(pid_m, workers, enEspera-1)
 									else
-										workers = workers ++ [pid_w]
+										poolWorkers(pid_m, workers ++ [pid_w], enEspera)
+									end
 
     end
-    poolWorkers()
   end
 
 end
