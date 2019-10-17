@@ -4,6 +4,11 @@
 # FECHA: 27-09-2019
 # DESCRIPCIÓN:
 
+//agnadir elementos a lista con [] ++ []
+//sacar primero de la lista hd([])
+//quitar primero de la lista [] = tl([])
+//tamagno de una lista length([])
+
 defmodule EscenarioTres do
 	def inicializarCliente() do
 		#registrarse
@@ -75,19 +80,23 @@ defmodule EscenarioTres do
   def poolWorkers() do
 
   #pids de los workers.
-  workers = [:"worker1@127.0.0.1", :"worker@127.0.0.1"]
-  lEspera = []
-
+  workers = [:"worker1@127.0.0.2",:"worker2@127.0.0.2",:"worker3@127.0.0.2",:"worker4@127.0.0.2", :"worker5@127.0.0.3",:"worker6@127.0.0.3",:"worker7@127.0.0.3",:"worker8@127.0.0.3"]
+  espera = 0
+	pid_m =
     receive do
     {pid_m, :peticion}  ->
-                  //COMPROBAR SI HAY ALGUN WORKER LIBRE
-                  //SINO HAY AGNADIR A LISTA DE ESPERA
-                  send(pid_m, {worker})
+                  if length(workers)>0 do
+                  	send(pid_m, {hd(workers)})
+										workers = tl(workers)
+									else
+										espera = espera+1
+									end
 
     {pid_w, :fin} ->
-                  //SI HAY PETICIONES EN LA LISTA DE ESPERA, SE LE ASIGNA A LA PRIMERA EL WORKER QUE HA ACABADO
-                  //SI NO SE AGNADE A LA LISTA DE WORKERS LIBRES EL pid recibido
-
+                  if espera>0 do
+										send(pid_m, {pid_w})
+									else
+										workers = workers ++ [pid_w]
 
     end
     poolWorkers()
