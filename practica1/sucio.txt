@@ -14,7 +14,7 @@ escenario3
 Master
 
 iex --name servidor@127.0.0.1
-iex(servidor@127.0.0.1)1> EscenarioTres.inicializarMaster(:"pool@127.0.0.2")
+EscenarioTres.inicializarMaster(:"pool@127.0.0.2")
 
 WORKER maquina
 iex --name worker1@127.0.0.3
@@ -25,4 +25,10 @@ iex --name worker2@127.0.0.4
 EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
 
 POOL
-EscenarioTres.inicializarPool(:"servidor@127.0.0.1,[:"worker1@127.0.0.3", :"worker2@127.0.0.4"])
+iex --name pool@127.0.0.2
+
+EscenarioTres.inicializarPool(:"servidor@127.0.0.1",[:"worker1@127.0.0.3", :"worker2@127.0.0.4"])
+
+CLIENTE
+
+EscenarioTres.inicializarCliente(:"servidor@127.0.0.1")

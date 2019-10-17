@@ -29,39 +29,27 @@ defmodule EscenarioTres do
     master(pid_pool,[])
   end
 
-	def inicializarWorkers([], workerspid,pid_pool) do
-
-	end
-
-	def inicializarWorkers(workers, workerspid, pid_pool) do
-		#lanzamos 4 threads remotos
-		pid1 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
-		pid2 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
-		pid3 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
-		pid4 = Node.spawn(hd(workers),EscenarioTres,:worker,[pid_pool])
-
-		inicializarWorkers(tl(workers), workerspid ++ [pid1] ++ [pid2] ++ [pid3] ++ [pid4], pid_pool)
-	end
-
 	def inicializarPool(pid_m, workers) do
 		#registrarse
     Process.register(self(), :pool)
 		#añadir cookie
 		#Conectar con maquina master
+		Node.set_cookie(:cookie123)
 		Node.connect(pid_m)
     #llamar a Servidor
 		IO.puts("POOL ACTIVO")
 		#declaracion de la informacion respectiva al pool de recursos
 		#,:"worker3@127.0.0.2",:"worker4@127.0.0.2", :"worker5@127.0.0.3",:"worker6@127.0.0.3",:"worker7@127.0.0.3",:"worker8@127.0.0.3"
-		workerspid = []
-		inicializarWorkers(workers, workerspid, self())
-	  IO.puts("inicializarPool: workerspid= #{workerspid}")
+		workerspid = [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])]
+		IO.puts("inicializarPool:")
+		IO.inspect workerspid
     poolWorkers(pid_m, workerspid, 0)
 
 	end
 
 	def inicializarWorker(pid_m, pid_pool) do
     #añadir cookie
+		Node.set_cookie(:cookie123)
 		#conectar con MASTER
 		Node.connect(pid_m)
     #llamar a Servidor
@@ -76,13 +64,14 @@ defmodule EscenarioTres do
   def master(pid_pool,listaPendientes) do
     #RECIBE 1 Fibonacci a realizar
 		IO.puts("-------------------------------------------")
-		IO.puts("master: listaPendientes= #{listaPendientes}")
+		#IO.puts("master: listaPendientes= #{listaPendientes}")
 		IO.puts("-------------------------------------------")
     receive do
 	  {pid,op,rango,num}  ->
-				IO.puts("master: RECIBO PETICION CLIENTE #{pid} #{op} #{rango} #{num}")
+			#	IO.puts("master: RECIBO PETICION CLIENTE #{pid} #{op} #{rango} #{num}")
 				#//SEND PETICION DE WORKER A POOL DE WORKERS
-				IO.puts("master: PIDO MASTER A POOL #{pid_pool}")
+				#IO.puts("master: PIDO MASTER A POOL #{pid_pool}")
+					IO.puts("master: PETICION RECIBIDA")
         send({:pool,pid_pool}, {:peticion})
 				#AGNADE A LA LISTA DE ESPERA LA PETICION HASTA QUE RECIBA UN WORKER PARA MANDARLA
 				master(pid_pool, listaPendientes ++ [{pid,op,rango,num}])
@@ -149,15 +138,15 @@ defmodule EscenarioTres do
   def poolWorkers(pid_m, workers, enEspera) do
 		IO.puts("************************************")
 		IO.puts("poolWorkers: enEspera= #{enEspera}")
-		IO.puts("poolWorkers: workers= #{workers}")
-
+		#IO.puts("poolWorkers: workers= #{workers}")
+     IO.inspect workers
     receive do
     {:peticion}  ->
                   if length(workers)>0 do
                   	send({:server,pid_m}, {hd(workers)})
 										poolWorkers(pid_m, tl(workers), enEspera)
 									else
-										poolWorkers(pid_m, workers, enEspera-1)
+										poolWorkers(pid_m, workers, enEspera+1)
 									end
 
     {pid_w, :fin} ->
