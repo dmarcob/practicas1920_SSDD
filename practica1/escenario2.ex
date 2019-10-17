@@ -5,13 +5,13 @@
 # DESCRIPCIÓN:
 
 defmodule EscenarioDos do
-	def inicializarCliente() do
+	def inicializarCliente(pid_s) do
 		#registrarse
 		#Process.register(self(), :client)
 		#añadir cookie
-
 		#Conectar con maquina servidor
-		Cliente.cliente({:server,:"servidor@127.0.0.1"},:dos)
+		Node.set_cookie(:cookie123)
+		Cliente.cliente({:server,pid_s},:dos)
 		IO.puts("cliente ya ha pedido")
 	end
 
@@ -21,6 +21,7 @@ defmodule EscenarioDos do
     #registrarse
     Process.register(self(), :server)
     #añadir cookie
+			Node.set_cookie(:cookie123)
     #llamar a Servidor
 		IO.puts("SERVIDOR ACTIVO")
     servidor()

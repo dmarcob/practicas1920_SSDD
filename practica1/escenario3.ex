@@ -11,7 +11,7 @@ defmodule EscenarioTres do
 		#añadir cookie
 
 		#Conectar con maquina servidor
-		#Node.set_cookie(:cookie123)
+		Node.set_cookie(:cookie123)
 		Node.connect(:"servidor@127.0.0.1")
 		Cliente.cliente({:server,:"servidor@127.0.0.1"},:tres)
 		IO.puts("Cliente ya ha pedido")
@@ -20,6 +20,7 @@ defmodule EscenarioTres do
 
   def inicializarWorker(dirMaster) do
 		#Node.connect(:"servidor@127.0.0.1")
+			Node.set_cookie(:cookie123)
 		IO.puts("Worker conectado")
 		Node.connect(dirMaster)
   end
@@ -28,14 +29,14 @@ defmodule EscenarioTres do
 		#COMPLETAR
 		IO.puts("PRIMEROLIBRE")
 		if elem(procesosLibres, 0) > 0 do
-			IO.puts("primeroLibre: #{Enum.at(listaWorkers, 0)} PENEEE")
+			IO.puts("primeroLibre: #{Enum.at(listaWorkers, 0)} ")
 			procesosLibres = put_elem(procesosLibres, 0, elem(procesosLibres, 0) - 1)
 			IO.puts("------------------------")
 			IO.puts("primeroLibre: procesosLibres {#{elem(procesosLibres, 0)},#{elem(procesosLibres, 1)} }")
 			IO.puts("------------------------")
 			Enum.at(listaWorkers, 0)
 	else if elem(procesosLibres, 1) > 0 do
-		IO.puts("primeroLibre: #{ Enum.at(listaWorkers, 1)} Cacaaaa")
+		IO.puts("primeroLibre: #{ Enum.at(listaWorkers, 1)} ")
 	  	procesosLibres = put_elem(procesosLibres, 1, elem(procesosLibres, 1) - 1)
 		 Enum.at(listaWorkers, 1)
 	 else -1
@@ -46,10 +47,12 @@ end
 
   def recolectar(listaWorkers, procesosLibres, dirWorker) do
   	# COMPLETAR
-		IO.puts("ACTUALIZAR")
+		 IO.puts("recolectar:  ENTRA")
 		if dirWorker == Enum.at(listaWorkers, 0) do
-			 IO.puts("recolectar: #{dirWorker} == #{ Enum.at(listaWorkers, 0)} ")
+			 IO.puts("recolectar:  IF")
 			 procesosLibres = put_elem(procesosLibres, 0, elem(procesosLibres, 0) + 1)
+			 IO.puts("recolectar:  ENTRA")
+			 IO.puts("recolectar: #{ Enum.at(listaWorkers, 0)}")
 		else
 				IO.puts("recolectar: #{dirWorker} != #{ Enum.at(listaWorkers, 0)}")
 		   procesosLibres = put_elem(procesosLibres, 1, elem(procesosLibres, 1) + 1)
@@ -62,15 +65,19 @@ end
 		if op == :fib do
 			IO.puts("worker: :fib")
 			resultado = Enum.map(rango, fn x -> Fib.fibonacci(x) end)
+			t2 = Time.utc_now()
+			tiempoAislado = Time.diff(t2,t1,:millisecond)
+			IO.puts("#{tiempoAislado}ms")
+			send(pidCliente,{:result,resultado,tiempoAislado})
 		else
 			#op == :fib_tr
 			IO.puts("worker: :fib_tr")
 			resultado = Enum.map(rango, fn x -> Fib.fibonacci_tr(x) end)
+			t2 = Time.utc_now()
+			tiempoAislado = Time.diff(t2,t1,:millisecond)
+			IO.puts("#{tiempoAislado}ms")
+			send(pidCliente,{:result,resultado,tiempoAislado})
 		end
-		t2 = Time.utc_now()
-		tiempoAislado = Time.diff(t2,t1,:millisecond)
-		IO.puts("#{tiempoAislado}ms")
-		send(pidCliente,{:result,resultado,tiempoAislado})
 		send(pidMaster, {:trabajado, dirWorker})
   end
 

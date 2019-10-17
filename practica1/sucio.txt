@@ -1,0 +1,28 @@
+
+
+iniciar:
+
+iex --name servidor@127.0.0.1 \
+--erl 'kernel inet_dist_listen_min 32000' \
+--erl '-kernel inet_dist_listen_max 32009' \
+--cookie cookie123
+
+
+
+escenario3
+
+Master
+
+iex --name servidor@127.0.0.1
+iex(servidor@127.0.0.1)1> EscenarioTres.inicializarMaster(:"pool@127.0.0.2")
+
+WORKER maquina
+iex --name worker1@127.0.0.3
+  EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
+
+WORKER maquino
+iex --name worker2@127.0.0.4
+EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
+
+POOL
+EscenarioTres.inicializarPool(:"servidor@127.0.0.1,[:"worker1@127.0.0.3", :"worker2@127.0.0.4"])
