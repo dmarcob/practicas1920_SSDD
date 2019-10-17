@@ -95,6 +95,7 @@ defmodule EscenarioTres do
     {pid_w, :fin} ->
                   if espera>0 do
 										send(pid_m, {pid_w})
+										espera = espera - 1
 									else
 										workers = workers ++ [pid_w]
 
