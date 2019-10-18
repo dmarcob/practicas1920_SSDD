@@ -28,6 +28,16 @@ defmodule EscenarioTres do
     master(pid_pool,[])
   end
 
+	def obtenerpids(workers, 1) do
+		workerpid = [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])] ++ [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])] ++
+		            [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])]++ [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])]
+		workerpid
+	end
+	def obtenerpids(workers, n) when n != 1 do
+		workerpid = [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])] ++ [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])] ++
+							 [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])]++ [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])]
+		workerpid ++ obtenerpids(tl(workers), n - 1)
+	end
 	def inicializarPool(pid_m, workers) do
 		#registrarse
     Process.register(self(), :pool)
@@ -39,21 +49,15 @@ defmodule EscenarioTres do
 		IO.puts("InicializarPool: ******** workersAntes: ")
 		IO.inspect workers
 		IO.puts("********************** ")
-		worker1 = Enum.at(workers, 0)
-		worker2 = Enum.at(workers, 1)
 
-		worker1pid = [Node.spawn(worker1,EscenarioTres,:worker,[self()])] ++ [Node.spawn(worker1,EscenarioTres,:worker,[self()])] ++
-									 [Node.spawn(worker1,EscenarioTres,:worker,[self()])]++ [Node.spawn(worker1,EscenarioTres,:worker,[self()])]
-
-		worker2pid = [Node.spawn(worker2,EscenarioTres,:worker,[self()])] ++ [Node.spawn(worker2,EscenarioTres,:worker,[self()])] ++
-							 		 [Node.spawn(worker2,EscenarioTres,:worker,[self()])]++ [Node.spawn(worker2,EscenarioTres,:worker,[self()])]
-
+		workerspid = obtenerpids(workers, length(workers))
 		IO.puts("******** workersDespues: ")
 		IO.inspect workers
 		IO.puts("*********workersPid despues ")
-		IO.inspect worker1pid ++ worker2pid
+		IO.inspect workerspid
 		IO.puts("*************************** ")
-    poolWorkers(pid_m, worker1pid ++ worker2pid, 0)
+		
+		poolWorkers(pid_m, workerspid, 0)
 
 	end
 

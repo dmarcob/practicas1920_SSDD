@@ -49,11 +49,15 @@ EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
 iex --name worker2@127.0.0.4
 EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
 
+---------WORKER tres----------------------------
+iex --name worker3@127.0.0.5
+EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
+
 ---------POOL-----------------------------------
 iex --name pool@127.0.0.2
-EscenarioTres.inicializarPool(:"servidor@127.0.0.1",[:"worker1@127.0.0.3", :"worker2@127.0.0.4"])
+EscenarioTres.inicializarPool(:"servidor@127.0.0.1",[:"worker1@127.0.0.3", :"worker2@127.0.0.4", :"worker3@127.0.0.5", :"worker4@127.0.0.6", :"worker5@127.0.0.7"])
 
 --------CLIENTE---------------------------------
-iex --name cliente@127.0.0.5
+iex --name cliente@127.0.0.6
 EscenarioTres.inicializarCliente(:"servidor@127.0.0.1")
 ------------------------------------------------
