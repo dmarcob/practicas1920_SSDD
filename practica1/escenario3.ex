@@ -35,11 +35,25 @@ defmodule EscenarioTres do
 		Node.set_cookie(:cookie123)
 		#Conectar con maquina master
 		Node.connect(pid_m)
-		IO.puts("POOL ACTIVO")
-		workerspid = [Node.spawn(hd(workers),EscenarioTres,:worker,[self()])]
-		IO.puts("inicializarPool:")
-		IO.inspect workerspid
-    poolWorkers(pid_m, workerspid, 0)
+		IO.puts("inicializarPool: POOL ACTIVO")
+		IO.puts("InicializarPool: ******** workersAntes: ")
+		IO.inspect workers
+		IO.puts("********************** ")
+		worker1 = Enum.at(workers, 0)
+		worker2 = Enum.at(workers, 1)
+
+		worker1pid = [Node.spawn(worker1,EscenarioTres,:worker,[self()])] ++ [Node.spawn(worker1,EscenarioTres,:worker,[self()])] ++
+									 [Node.spawn(worker1,EscenarioTres,:worker,[self()])]++ [Node.spawn(worker1,EscenarioTres,:worker,[self()])]
+
+		worker2pid = [Node.spawn(worker2,EscenarioTres,:worker,[self()])] ++ [Node.spawn(worker2,EscenarioTres,:worker,[self()])] ++
+							 		 [Node.spawn(worker2,EscenarioTres,:worker,[self()])]++ [Node.spawn(worker2,EscenarioTres,:worker,[self()])]
+
+		IO.puts("******** workersDespues: ")
+		IO.inspect workers
+		IO.puts("*********workersPid despues ")
+		IO.inspect worker1pid ++ worker2pid
+		IO.puts("*************************** ")
+    poolWorkers(pid_m, worker1pid ++ worker2pid, 0)
 
 	end
 
@@ -50,7 +64,7 @@ defmodule EscenarioTres do
 		Node.connect(pid_m)
     #llamar a Servidor
 		IO.puts("WORKER ACTIVO")
-    #worker(pid_pool)
+    worker(pid_pool)
   end
 
 
@@ -60,10 +74,14 @@ defmodule EscenarioTres do
   def master(pid_pool,listaPendientes) do
     receive do
 	  {pid,op,rango,num}  ->
-														IO.puts("master: PETICION RECIBIDA")
-        										send({:pool,pid_pool}, {:peticion})
+														IO.puts("master: PETICION CLIENTE RECIBIDA")
+														IO.inspect listaPendientes
+														IO.puts("pid_pool: #{pid_pool}")
+        										send({:pool,pid_pool}, {self(),:peticion})
 														#AGNADE A LA LISTA DE ESPERA LA PETICION HASTA QUE RECIBA UN WORKER PARA MANDARLA
 														master(pid_pool, listaPendientes ++ [{pid,op,rango,num}])
+
+
 		{pidWorker} ->
 														#recibe worker
 														IO.puts("master: RECIBO MASTER DISPONIBLE")
@@ -85,7 +103,7 @@ defmodule EscenarioTres do
 															tiempoAislado = Time.diff(t2,t1,:millisecond)
 															IO.puts("#{tiempoAislado}ms")
 	                            #//se comunica al pool de workers de que hemos terminado
-	                            send({:pool,pid_pool}, {self(),:fin})
+	                            send(pid_pool, {self(),:fin})
 															send(pid,{:result,resultado,tiempoAislado})
 
 		{pid,:fib,rango,num}  ->
@@ -96,7 +114,7 @@ defmodule EscenarioTres do
 															tiempoAislado = Time.diff(t2,t1,:millisecond)
 															IO.puts("#{tiempoAislado}ms")
 		                          #//se comunica al pool de workers de que hemos terminado
-		                          send({:pool,pid_pool}, {self(),:fin})
+		                          send(pid_pool, {self(),:fin})
 															send(pid,{:result,resultado,tiempoAislado})
 
 	  {pid,:fib_tr,rango,1} -> IO.puts("worker: trabajo :fib_tr")
@@ -106,7 +124,7 @@ defmodule EscenarioTres do
 															tiempoAislado = Time.diff(t2,t1,:millisecond)
 															IO.puts("#{tiempoAislado}ms")
 															#//se comunica al pool de workers de que hemos terminado
-															send({:pool,pid_pool}, {self(),:fin})
+															send(pid_pool, {self(),:fin})
 															send(pid,{:result,resultado,tiempoAislado})
 
 	  {pid,:fib_tr,rango,num} -> IO.puts("worker: trabajo :fib_tr")
@@ -114,9 +132,9 @@ defmodule EscenarioTres do
 															resultado = Enum.map(rango, fn x -> Fib.fibonacci_tr(x) end)
 															t2 = Time.utc_now()
 															tiempoAislado = Time.diff(t2,t1,:millisecond)
-														IO.puts("#{tiempoAislado}ms")
+													  	IO.puts("#{tiempoAislado}ms")
 	                            #//se comunica al pool de workers de que hemos terminado
-	                            send({:pool,pid_pool}, {self(),:fin})
+	                            send(pid_pool, {self(),:fin})
 	  end
     worker(pid_pool)
   end
@@ -130,19 +148,24 @@ defmodule EscenarioTres do
 		IO.puts("************************************")
     IO.inspect workers
     receive do
-    {:peticion}  ->
+    {pid_m, :peticion}  -> IO.puts("poolWorkers: PETICION MASTER RECIBIDA")
                   	if length(workers)>0 do
-                  		send({:server,pid_m}, {hd(workers)})
+											IO.puts("poolWorkers: 1IF longitud > 0")
+                  		send(pid_m, {hd(workers)})
 											poolWorkers(pid_m, tl(workers), enEspera)
 										else
+											IO.puts("poolWorkers: 1ELSE longitud == 0")
 											poolWorkers(pid_m, workers, enEspera+1)
 										end
 
     {pid_w, :fin} ->
+										IO.puts("poolWorkers: WORKER HA TERMINADO TAREA")
                   	if enEspera>0 do
-											send({:server,pid_m}, {pid_w})
+											IO.puts("poolWorkers: 2IF longitud > 0")
+											send(pid_m, {pid_w})
 											poolWorkers(pid_m, workers, enEspera-1)
 										else
+											IO.puts("poolWorkers: 2ELSE longitud == 0")
 											poolWorkers(pid_m, workers ++ [pid_w], enEspera)
 										end
     end

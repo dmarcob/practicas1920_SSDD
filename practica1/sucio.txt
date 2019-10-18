@@ -1,0 +1,59 @@
+
+
+***************************
+ESCENARIO1
+**************************
+------------cliente-------------
+iex --name cliente@127.0.0.1
+EscenarioUno.inicializarCliente(:"servidor@127.0.0.1")
+
+------------Servidor------------
+ iex --name servidor@127.0.0.1
+ EscenarioUno.inicializarServidor()
+
+
+
+
+
+
+****************************
+ESCENARIO2
+****************************
+-----------cliente------------
+ iex --name cliente@127.0.0.1
+ EscenarioDos.inicializarCliente(:"servidor@127.0.0.1")
+
+ ----------servidor-----------
+iex --name servidor@127.0.0.1
+iex(servidor@127.0.0.1)1> EscenarioDos.inicializarServidor()
+
+
+
+
+
+
+
+****************************
+ESCENARIO 3
+****************************
+
+----------Master--------------------------------
+iex --name servidor@127.0.0.1
+EscenarioTres.inicializarMaster(:"pool@127.0.0.2")
+
+----------WORKER uno----------------------------
+iex --name worker1@127.0.0.3
+EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
+
+---------WORKER dos----------------------------
+iex --name worker2@127.0.0.4
+EscenarioTres.inicializarWorker(:"servidor@127.0.0.1",:"pool@127.0.0.2")
+
+---------POOL-----------------------------------
+iex --name pool@127.0.0.2
+EscenarioTres.inicializarPool(:"servidor@127.0.0.1",[:"worker1@127.0.0.3", :"worker2@127.0.0.4"])
+
+--------CLIENTE---------------------------------
+iex --name cliente@127.0.0.5
+EscenarioTres.inicializarCliente(:"servidor@127.0.0.1")
+------------------------------------------------
