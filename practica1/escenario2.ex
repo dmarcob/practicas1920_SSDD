@@ -2,20 +2,19 @@
 # NIAs: 739729, 755232
 # FICHERO: escenario2.ex
 # FECHA: 27-09-2019
-# DESCRIPCIÓN:
+# DESCRIPCIÓN: Código de inicialización de cliente y servidor, escenario dos.
+#							 Código del servidor concurrente.
 
 defmodule EscenarioDos do
+	@moduledoc """
+	Arquitectura cliente-servidor concurrente
+	"""
 	def inicializarCliente(pid_s) do
-		#registrarse
-		#Process.register(self(), :client)
 		#añadir cookie
-		#Conectar con maquina servidor
 		Node.set_cookie(:cookie123)
+		#Conectar con maquina servidor
 		Cliente.cliente({:server,pid_s},:dos)
-		IO.puts("cliente ya ha pedido")
 	end
-
-
 
 	def inicializarServidor() do
     #registrarse
@@ -36,6 +35,7 @@ defmodule EscenarioDos do
 		                          #Medición aislada
 		                          tiempoAislado = Time.diff(t2,t1,:millisecond)
 															IO.puts("#{tiempoAislado}ms")
+															#Enviar resultado a cliente
 															send(pid,{:result,resultado,tiempoAislado}) end)
 
     {pid,:fib,rango,num} -> spawn( fn ->
@@ -45,9 +45,6 @@ defmodule EscenarioDos do
                           		#Medición aislada
                           		tiempoAislado = Time.diff(t2,t1,:millisecond)
 															IO.puts("#{tiempoAislado}ms") end)
-
-
-
     end
     servidor()
   end

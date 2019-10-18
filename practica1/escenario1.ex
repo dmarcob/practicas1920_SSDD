@@ -2,25 +2,25 @@
 # NIAs: 739729, 755232
 # FICHERO: escenario1.ex
 # FECHA: 27-09-2019
-# DESCRIPCIÓN:
+# DESCRIPCIÓN: Código de inicialización de cliente y servidor, escenario uno.
+#							 Código del servidor secuencial
 
 defmodule EscenarioUno do
+	@moduledoc """
+	Arwuitectura cliente-servidor secuencial
+	"""
 	def inicializarCliente(pid_s) do
-		#registrarse
-		#Process.register(self(), :client)
+		#Añadir cookie
 		Node.set_cookie(:cookie123)
 		#Conectar con maquina servidor
 		Cliente.cliente({:server,pid_s},:uno)
-		#IO.puts("cliente ya ha pedido")
 	end
 
-
-
 	def inicializarServidor() do
-    #registrarse
+    #Añadir cookie
 		Node.set_cookie(:cookie123)
+		#Registrar el proceso servidor
     Process.register(self(), :server)
-    #llamar a Servidor
 		IO.puts("SERVIDOR ACTIVO")
     servidor()
   end
@@ -32,7 +32,8 @@ defmodule EscenarioUno do
 		                          t2 = Time.utc_now()
 		                          #Medición aislada
 		                          tiempoAislado = Time.diff(t2,t1,:millisecond)
-																IO.puts("#{tiempoAislado}ms")
+															IO.puts("#{tiempoAislado}ms")
+															#Envía resultado a cliente
 															send(pid,{:result,resultado, tiempoAislado})
 
     end

@@ -1,13 +1,10 @@
-# AUTORES: Rafael Tolosana Calasanz
- # fuentes: 	https://fschuindt.github.io/blog/2017/09/21/concurrent-calculation-of-fibonacci-in-elixir.html
- #			https://blog.rentpathcode.com/clojure-vs-elixir-part-2-fibonacci-code-challenge-13f485f48511
- #			https://alchemist.camp/episodes/fibonacci-tail
- # FICHERO: fibonacci.exs
- # FECHA: 25 de septiembre de 2019
- # TIEMPO: 1 hora
- # DESCRIPCI'ON:  	Compilaci'on de implementaciones de los n'umeros de Fibonacci para los servidores
- #			 	Las opciones de invocaci'on son: Fib.fibonacci(n), Fib.fibonacci_rt(n), Fib.of(n)
- #				M'odulo de operaciones para el cliente (generador de carga de trabajo)
+# AUTORES: José Manuel Vidarte Llera, Diego Marco Beisty
+# NIAs: 739729, 755232
+# FICHERO: escenario3.ex
+# FECHA: 27-09-2019
+# DESCRIPCIÓN: Código añadido a los ḿódulos de los profesores
+#							Código de fibonacci y del cliente
+
 defmodule Fib do
 	def fibonacci(0), do: 0
 	def fibonacci(1), do: 1
@@ -77,18 +74,13 @@ defmodule Cliente do
 
   def genera_workload(server_pid, escenario) do
   	if escenario == 1 do
-
 		launch(server_pid, :fib, 1)
-		#t2_e1 = Time.utc_now()
-		#tiempoTotal1 = Time.diff(t2_e1,t1_e1,:millisecond)
-	  #IO.puts("Tiempo total respuesta: #{tiempoTotal1}ms")
 	else
 		launch(server_pid, :fib, 4)
 	end
 	Process.sleep(2000)
   	genera_workload(server_pid, escenario)
   end
-
 
   def cliente(server_pid, tipo_escenario) do
   	case tipo_escenario do
