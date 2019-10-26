@@ -55,6 +55,7 @@ defmodule Cliente do
 											IO.puts("_____________________________________")
 			end end)
 		send(pid, {pidRecibir, op, 1..36, 1})
+
   end
 
   def launch(pid, op, n) when n != 1 do
@@ -64,10 +65,10 @@ defmodule Cliente do
 
   def genera_workload(server_pid, escenario, time) do
 	cond do
-		time <= 3 ->  launch(server_pid, :fib, 8); Process.sleep(2000)
-		time == 4 ->  launch(server_pid, :fib, 8);Process.sleep(round(:rand.uniform(100)/100 * 2000))
-		time <= 8 ->  launch(server_pid, :fib, 8);Process.sleep(round(:rand.uniform(100)/1000 * 2000))
-		time == 9 -> launch(server_pid, :fib_tr, 8);Process.sleep(round(:rand.uniform(2)/2 * 2000))
+		time <= 3 ->  launch(server_pid, :fib, 8);IO.puts(Time.utc_now()); Process.sleep(2000)
+		time == 4 ->  launch(server_pid, :fib, 8);IO.puts(Time.utc_now());Process.sleep(round(:rand.uniform(100)/100 * 2000))
+		time <= 8 ->  launch(server_pid, :fib, 8);IO.puts(Time.utc_now());Process.sleep(round(:rand.uniform(100)/1000 * 2000))
+		time == 9 -> launch(server_pid, :fib_tr, 8);IO.puts(Time.utc_now());Process.sleep(round(:rand.uniform(2)/2 * 2000))
 	end
   	genera_workload(server_pid, escenario, rem(time + 1, 10))
   end
