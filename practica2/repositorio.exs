@@ -23,7 +23,7 @@ defmodule Repositorio do
 			{:update_resumen, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); {descripcion, principal, entrega}
 			{:update_principal, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); {resumen, descripcion, entrega}
 			{:update_entrega, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); {resumen, principal, descripcion}
-			{:read_resumen, c_pid} -> send(c_pid, {:reply, resumen}); {resumen, principal, entrega}
+			{:read_resumen, c_pid} -> send(c_pid, {:reply, resumen});IO.puts("read_resumen"); {resumen, principal, entrega}
 			{:read_principal, c_pid} -> send(c_pid, {:reply, principal}); {resumen, principal, entrega}
 			{:read_entrega, c_pid} -> send(c_pid, {:reply, entrega}); {resumen, principal, entrega}
 		end

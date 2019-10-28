@@ -1,0 +1,11 @@
+
+CLIENTE
+iex --name "cliente1@127.0.0.1"
+
+SERVIDOR
+iex --name "servidor@127.0.0.1"
+Repositorio.initServidor()
+
+ARRANCAR
+iex --name "maquina@127.0.0.1"
+Node.connect(:"cliente1@127.0.0.1"); Arrancar.init(:"servidor@127.0.0.1", 0, 1, [:"cliente1@127.0.0.1"])
