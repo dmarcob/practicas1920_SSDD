@@ -210,7 +210,7 @@ defmodule Cliente do
     end
   end
 
-  def send_request(n, pids,lrd, pid_request, identificador, op_type) when n != 1 do
+  def send_request(n, pids,lrd, pid_request, identificador, op_type) when n > 1 do
     if hd(pids) != pid_request do
       IO.puts("send_request_n: mandando request")
       send(hd(pids), {:request,self(), lrd, identificador, op_type})
@@ -218,17 +218,17 @@ defmodule Cliente do
     send_request(n - 1, tl(pids),lrd, pid_request, identificador, op_type)
   end
 
-  def send_permission(1, pids,  identificador) do
+  def send_permission(1, pids) do
     if hd(pids) != self() do
       send(hd(pids), {:permission, self()})
     end
   end
 
-def send_permission(n, pids,  identificador) when n != 1 do
+def send_permission(n, pids) when n > 1 do
   if hd(pids) != self() do
     send(hd(pids), {:permission, self()})
   end
-  send_permission(n - 1, tl(pids),  identificador)
+  send_permission(n - 1, tl(pids))
 end
 
 
@@ -260,7 +260,7 @@ end
 
 
   #Operación para soltar el mutex distribuido
-  def end_op(pid_mutex, pid_permissions, pid_permission, identificador) do
+  def end_op(pid_mutex) do
       send({:variables,node},{self(), :write_state, 0}); IO.puts("end_op: write state=out")
       send({:variables,node},{self(), :read_perm_delayed})
       perm_delayed = receive do
@@ -268,7 +268,7 @@ end
                                                    perm_delayed
       end
       send({:variables,node},{self(), :reset_perm_delayed}); IO.puts("end_op: reset perm_delayed")
-      send_permission(length(pid_permissions), pid_permissions,  identificador)
+      send_permission(length(perm_delayed), perm_delayed)
   end
 
 
@@ -309,10 +309,14 @@ end
 
   end
 
-  def permission(nClientes, nClientes_copia) do
+  def permission(nClientes, nClientes_copia) do #ARREGLAR
     IO.puts("permission: INICIO")
-    if nClientes_copia > 1 do
-      receive do
+    if nClientes_copia == 1 do
+       #Caso solo hay un cliente
+       send({:lector, node}, {self(), :ok_seccion_critica})
+    else
+       #caso hay varios clientes
+       receive do
         {:permission, pid} -> if nClientes != 1 do
                               permission(nClientes - 1, nClientes_copia)
                             else
@@ -320,9 +324,8 @@ end
                               permission(nClientes_copia, nClientes_copia)
                             end
      end
-   else
-     send({:lector, node}, {self(), :ok_seccion_critica})
-     #permission(nClientes_copia, nClientes_copia)
+
+     permission(nClientes_copia, nClientes_copia)
    end
   end
 end
