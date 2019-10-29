@@ -1,11 +1,16 @@
 
 CLIENTE
-iex --name "cliente1@127.0.0.1"
+iex --name "cliente1@127.0.0.1" --cookie cookie123
 
+iex --name "cliente2@127.0.0.1" --cookie cookie123
 SERVIDOR
 iex --name "servidor@127.0.0.1"
 Repositorio.initServidor()
 
 ARRANCAR
-iex --name "maquina@127.0.0.1"
-Node.connect(:"cliente1@127.0.0.1"); Arrancar.init(:"servidor@127.0.0.1", 0, 1, [:"cliente1@127.0.0.1"])
+iex --name "maquina@127.0.0.1" --cookie cookie123
+  Arrancar.init(:"servidor@127.0.0.1", 0, 2, [:"cliente1@127.0.0.1", :"cliente2@127.0.0.1"])
+
+
+
+Arrancar.init(:"servidor@127.0.0.1", 0, 1, [:"cliente1@127.0.0.1"])

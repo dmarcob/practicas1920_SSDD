@@ -20,12 +20,12 @@ defmodule Repositorio do
 
 	defp repo_server({resumen, principal, entrega}) do
 		{n_resumen, n_principal, n_entrega} = receive do
-			{:update_resumen, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); {descripcion, principal, entrega}
-			{:update_principal, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); {resumen, descripcion, entrega}
-			{:update_entrega, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); {resumen, principal, descripcion}
-			{:read_resumen, c_pid} -> send(c_pid, {:reply, resumen});IO.puts("read_resumen"); {resumen, principal, entrega}
-			{:read_principal, c_pid} -> send(c_pid, {:reply, principal}); {resumen, principal, entrega}
-			{:read_entrega, c_pid} -> send(c_pid, {:reply, entrega}); {resumen, principal, entrega}
+			{:update_resumen, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); IO.puts("update_resumen"); IO.inspect c_pid;{descripcion, principal, entrega}
+			{:update_principal, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); IO.puts("update_principal");IO.inspect c_pid;{resumen, descripcion, entrega}
+			{:update_entrega, c_pid, descripcion} -> send(c_pid, {:reply, :ok}); IO.puts("update_entrega");IO.inspect c_pid;{resumen, principal, descripcion}
+			{:read_resumen, c_pid} -> send(c_pid, {:reply, resumen});IO.puts("read_resumen");IO.inspect c_pid; {resumen, principal, entrega}
+			{:read_principal, c_pid} -> send(c_pid, {:reply, principal});IO.puts("read_principal");IO.inspect c_pid; {resumen, principal, entrega}
+			{:read_entrega, c_pid} -> send(c_pid, {:reply, entrega}); IO.puts("read_entrega");IO.inspect c_pid;{resumen, principal, entrega}
 		end
 		repo_server({n_resumen, n_principal, n_entrega})
 	end
