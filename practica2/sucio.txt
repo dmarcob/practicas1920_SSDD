@@ -1,16 +1,52 @@
 
+--------------1E, 1L----------------------
+
 CLIENTE
 iex --name "cliente1@127.0.0.1" --cookie cookie123
-
 iex --name "cliente2@127.0.0.1" --cookie cookie123
+
+
 SERVIDOR
-iex --name "servidor@127.0.0.1"
+iex --name "servidor@127.0.0.1" --cookie cookie123
 Repositorio.initServidor()
 
 ARRANCAR
 iex --name "maquina@127.0.0.1" --cookie cookie123
-  Arrancar.init(:"servidor@127.0.0.1", 0, 2, [:"cliente1@127.0.0.1", :"cliente2@127.0.0.1"])
+Arrancar.init(:"servidor@127.0.0.1", 1, 1, [:"cliente1@127.0.0.1", :"cliente2@127.0.0.1"])
 
 
 
-Arrancar.init(:"servidor@127.0.0.1", 0, 1, [:"cliente1@127.0.0.1"])
+--------------1E, 2L----------------------
+
+CLIENTES
+iex --name "cliente1@127.0.0.1" --cookie cookie123
+iex --name "cliente2@127.0.0.1" --cookie cookie123
+iex --name "cliente3@127.0.0.1" --cookie cookie123
+
+SERVIDOR
+iex --name "servidor@127.0.0.1" --cookie cookie123
+Repositorio.initServidor()
+
+ARRANCAR
+iex --name "maquina@127.0.0.1" --cookie cookie123
+Arrancar.init(:"servidor@127.0.0.1", 1, 2, [:"cliente1@127.0.0.1",  :"cliente2@127.0.0.1", :"cliente3@127.0.0.1"])
+
+--------------4E, 4L----------------------
+
+CLIENTES
+iex --name "cliente1@127.0.0.1" --cookie cookie123
+iex --name "cliente2@127.0.0.1" --cookie cookie123
+iex --name "cliente3@127.0.0.1" --cookie cookie123
+iex --name "cliente4@127.0.0.1" --cookie cookie123
+iex --name "cliente5@127.0.0.1" --cookie cookie123
+iex --name "cliente6@127.0.0.1" --cookie cookie123
+iex --name "cliente7@127.0.0.1" --cookie cookie123
+iex --name "cliente8@127.0.0.1" --cookie cookie123
+
+SERVIDOR
+iex --name "servidor@127.0.0.1" --cookie cookie123
+Repositorio.initServidor()
+
+ARRANCAR
+iex --name "maquina@127.0.0.1" --cookie cookie123
+Arrancar.init(:"servidor@127.0.0.1", 4, 4, [:"cliente1@127.0.0.1",  :"cliente2@127.0.0.1", :"cliente3@127.0.0.1", :"cliente4@127.0.0.1", :"cliente5@127.0.0.1", :"cliente6@127.0.0.1", :"cliente7@127.0.0.1", :"cliente8@127.0.0.1"])
