@@ -4,13 +4,6 @@
 # FECHA: 27-09-2019
 # DESCRIPCIÓN: Código de los lectores y escritores
 
-
-
-
-#Process.info(self(), :messages), Para leer el mailbox
-#flush, para vaciar el mailbox
-
-
 defmodule Arrancar do
 
   #############################################################################
@@ -72,7 +65,6 @@ defmodule Arrancar do
   end
 
   def init(dirServer, nEscritores, nLectores, dir_clientes) do
-    ###IO.puts("init: PRINCIPIO");
     Node.set_cookie(:cookie123)
     Node.connect(dirServer)
     #Defino matriz de exclusion,
@@ -85,26 +77,13 @@ defmodule Arrancar do
       {false, true},
       {true, true}
     }
-
-
     #Lanzo remotamente en cada cliente el proceso que atiende los reply de los demás clientes
     pid_permissions = obtenerPidPermission(dirServer, dir_clientes, nLectores + nEscritores, nLectores + nEscritores)
-  ###  IO.puts("init: pid_permissions: ")
-  ###  IO.inspect pid_permissions
-  ###  IO.puts("-------------------------------------------------")
     #Lanzo remotamente en cada cliente el proceso que atiende las request de los demás clientes
     pid_requests = obtenerPidRequest(dirServer, dir_clientes, nLectores, nEscritores, pid_permissions, exclude)
-  ###  IO.puts("init: pid_requests")
-  ###  IO.inspect pid_requests
-  ###    IO.puts("-------------------------------------------------")
-    #Lanzo remotamente en cada cliente el proceso que inicializa el cliente y ejecuta el lector/escritor
     pid_clientes = obtenerPidCliente(dirServer, dir_clientes, nLectores, nEscritores, pid_requests, pid_permissions, pid_requests, pid_permissions)
-  ###  IO.puts("init: pid_clientes")
-  ###  IO.inspect pid_clientes
-  ###    IO.puts("-------------------------------------------------")
     #Ya existen todos los procesos cliente, les doy permiso para empezar a ejecutarse
     empezar(pid_clientes, nLectores + nEscritores)
-  ###  IO.puts("init:FINAL")
   end
 
 end
@@ -113,27 +92,22 @@ end
 
 
 defmodule Cliente do
-#TODO:
-#      Cambiar estructura, en init otras dos instrucciones para node spawn de permission y eso...
-
 ##################################################################################################
-############################### MUTEX + VARIABLES_GLOBALES #######################################     PROCESO 1
+############################### MUTEX + VARIABLES_GLOBALES #######################################
 ##################################################################################################
   #Mutex para gestionar concurrencia (1)y(2) con (11) en el algoritmo de Ricart Agrawala
   def mutex do
     receive do
       {pid, :coger_mutex} -> send(pid,{:ok_mutex, self()})
-                            ###  IO.puts("mutex: recibido coger")
     end
     receive do
-      {pid, :soltar_mutex} -> ###IO.puts("mutex: recibido soltar")
+      {pid, :soltar_mutex} ->
                               mutex()
     end
   end
 
-  #Mantiene el estado de las variables globales                                                        PROCESO 2
+  #Mantiene el estado de las variables globales
   def variables_globales ({state, clock, lrd, perm_delayed}) do
-    ### IO.puts("variables_globales: state #{state}, clock=#{clock}, lrd=#{lrd}")
       #state=0 -> out, state=1 -> trying, state=2 -> in
       {state_new, clock_new, lrd_new, perm_delayed_new} = receive do
           {pid, :write_state, update} ->  {update, clock, lrd, perm_delayed}
@@ -152,7 +126,7 @@ defmodule Cliente do
  end
 
 ###########################################################################################
-############################### INICIALIZAR CLIENTE #######################################                    PROCESO 3
+############################### INICIALIZAR CLIENTE #######################################
 ###########################################################################################
   #Levanta un escritor y lo conecta al servidor
   def initEscritor(dir_server, identificador, pid_requests, pid_permissions, pid_request, pid_permission) do
@@ -203,7 +177,6 @@ defmodule Cliente do
        Process.sleep(:rand.uniform(1000) + 1000)
 
     IO.puts("escritor#{identificador}: SALIR ")
-    #IO.puts("-------------------")
     end_op()
     escritor(dir_server, pid_mutex, pid_requests,pid_permissions, pid_request, pid_permission, identificador, rem(time + 1, 3), type_op)
   end
@@ -211,7 +184,6 @@ defmodule Cliente do
   def lector(dir_server, pid_mutex, pid_requests, pid_permissions,pid_request, pid_permission, identificador, time, type_op) do
     IO.puts("lector #{identificador}: REQUEST")
     begin_op( pid_mutex, pid_requests, pid_request,pid_permission, identificador, type_op)
-    #  IO.puts("-------------------")
     IO.puts("lector #{identificador}: ENTRAR")
     cond do
       time == 0 ->  send({:server, dir_server}, {:read_resumen, self()});  #IO.puts("lector #{identificador}: Leer resumen")
@@ -224,7 +196,6 @@ defmodule Cliente do
        Process.sleep(:rand.uniform(1000) + 1000)
 
     IO.puts("lector#{identificador}: SALIR ")
-  #  IO.puts("-------------------")
     end_op()
     lector(dir_server, pid_mutex, pid_requests,pid_permissions, pid_request, pid_permission, identificador, rem(time + 1, 3), type_op)
   end
@@ -235,7 +206,6 @@ defmodule Cliente do
 
   def send_request(1, pids,lrd,pid_request,pid_permission, identificador, op_type) do
     if hd(pids) != pid_request do
-      #IO.inspect self()
       send(hd(pids), {:request,pid_permission, lrd, identificador, op_type})
     end
   end
@@ -279,7 +249,6 @@ end
       #Dejo mutex
       send(pid_mutex, {self(), :soltar_mutex})
       #Envío request a los demás clientes para entrar a la S.C
-      ###IO.puts("rbegin_op: cliente #{identificador} mandando peticion")
       send_request(length(pid_requests), pid_requests,clock + 1, pid_request,pid_permission, identificador, type_op)
       #Espero a que el proceso que espera los replies de los demás clientes me de permiso
       send(pid_permission,{:entrar, self()})
@@ -330,13 +299,10 @@ end
                                      end
                                      #Dejo mutex
                                      send({:mutex,node}, {self(), :soltar_mutex})
-                                     #IO.puts("request: state= #{state}, lrd= #{lrd},clock=#{clock}, k= #{k}, identificador=#{identificador}, j=#{j}, type_op=#{type_op}, op_t=#{op_t}")
                                      prio = (state != 0) and ((lrd < k) or ((lrd == k) and (identificador < j))) and elem(elem(matriz,type_op),op_t)
                                      if prio do
-                                      # IO.puts("request: #{identificador} NO doy permiso, mi lrd=#{lrd}, el otro=#{k}")
                                        send({:variables,node}, {self(), :add_perm_delayed, [pid]}); #IO.puts("request: Añadiendo--> #{j}");
                                      else
-                                      # IO.puts("request: #{identificador} doy permiso, mi lrd=#{lrd}, el otro=#{k}")
                                        send(pid, {:permission, self()})
                                      end
     end
@@ -344,7 +310,6 @@ end
   end
 
   def permission(nClientes, nClientes_copia) do #ARREGLAR
-  ###  IO.puts("permission: INICIO")
     if nClientes_copia == 1 do
 
       receive do
