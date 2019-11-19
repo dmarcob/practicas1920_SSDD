@@ -1,0 +1,1 @@
+t1 = Time.utc_now();Fib.fibonacci(1500);t2 = Time.utc_now();Time.diff(t2,t1,:millisecond);
