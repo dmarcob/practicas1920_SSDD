@@ -13,8 +13,9 @@
 	#//////////////////////////////////////////////
 
 defmodule DetectorFallos do
-	def init() do
+	def init(detector_id, pool_dir) do
 		Process.register(self(), :detector)
+		detectorFallos( detector_dir, pool_dir, n_replicas, timeout, num)
 	end
 
 	def pedirWorkersPool(pid_pool, 1) do
@@ -31,40 +32,39 @@ def pedirWorkersPool(pid_pool, n_replicas) when n_replicas > 1 do
 	pid ++ pedirWorkersPool(pid_pool, n_replicas - 1)
 end
 
-def send_task(pidWorkers, 1, num) do
-	send(hd(pidWorkers), {:req, {self(), num}})
-end
-
-def send_task(pidWorkers, n_replicas, num) when n_replicas > 1 do
-	send(hd(pidWorkers), {:req, {self(), num}})
-	send_task(tl(pidWorkers), n_replicas - 1, num)
-end
+# def send_task(pidWorkers, 1, num) do
+# 	send(hd(pidWorkers), {:req, {self(), num}})
+# end
+#
+# def send_task(pidWorkers, n_replicas, num) when n_replicas > 1 do
+# 	send(hd(pidWorkers), {:req, {self(), num}})
+# 	send_task(tl(pidWorkers), n_replicas - 1, num)
+# end
 
 #no haria falta usar solucionar_error, en recieve_task ya se manda al pool lo que tiene que hacer con la maquina en cada caso de error
-def solucionar_error([], []) do
+def solucionar_error(pid_pool, []) do
 end
 
-def solucionar_error(pid_pool, pid_workers, resultados) do
-	if hd(resultados) == -1 do
+def solucionar_error(pid_pool, respuesta_valida) do
+	if elem(hd(respuesta_valida), 1) == -1 do
 		#avisar al pool para que apague y reinicie el worker
-		send(pid_pool,{hd(pid_workers),:reset})
+		send(pid_pool,{elem(hd(respuesta_valida), 0),:reset})
 		#Node.spawn(hd(pid_workers),System,:halt,[]) # se hace asi el spawn remoto?
 		#System.halt(hd(pid_workers))
 		#Encender sistema y devolver worker a pool
 		#send(pid_pool,{{Node.spawn(hd(pid_workers), Worker,:init,[]), 0}, :fin})
 	else id hd(resultados) == -2
 		#avisar al pool para que encienda el worker
-		send(pid_pool,{hd(pid_workers),:turnon})
+		send(pid_pool,{elem(hd(respuesta_valida), 0),:turnon})
 		#Encender sistema
 		#send(pid_pool,{{Node.spawn(hd(pid_workers), Worker,:init,[]), 0}, :fin})
 	end
-	solucionar_error(tl(pid_workers, tl(resultados)))
+	solucionar_error(pid_pool, tl(respuesta_valida))
 end
 
-def receive_task(pid_pool, pid_workers, timeout) do
-#	Enum map itera sobre los pid y devuelve una lista con por ejemplo [num, -1, -2] siendo -1 y -2 errores del segundo y tercer worker de la lista pid_workers
-resultados = Enum.map(pid_workers, fn {pid_w, n} ->  #hay un problema, el worker no te envia su pid junto con el resultado, envia unicamente el resultado
-						  	receive do
+def detect(pid_worker,detector_dir, pool_dir, timeout, num) do
+	send(pid_worker, {:req, {self(), num}})
+	resultado = receive do
 		 						{pid_w, num} ->
 														if is_float(num) do
 															#Fallo response, necesita reiniciar
@@ -89,15 +89,25 @@ resultados = Enum.map(pid_workers, fn {pid_w, n} ->  #hay un problema, el worker
 													   error
 								end end)
 	#solucionar_error(pid_pool, pid_workers, resultados)
-	resultados
+	send ({:detector, detector_dir},{pid_worker,resultado})
 end
 
-def detectorFallos(pid_pool, n_replicas, timeout, num) do
+def receive_results(num_workers) do when num_workers > 0
+	respuesta = receive do
+							{pid_worker, resultado} -> {pid_worker, resultado}
+	end
+	[respuesta] ++ receive:results(num_workers - 1)
+end
+
+def detectorFallos(detector_dir, pid_pool, n_replicas, timeout, num) do
 	pid_workers = pedirWorkersPool(pid_pool, n_replicas)
-	send_task(pid_workers, num)
-	resultados = receive_task(pid_pool, pid_workers, timeout)
-	respuesta_valida = Enum.uniq(Enum.filter(resultados, fn x -> x > 0 end)) #Filtro los resultados válidos y los comparo
-	if respuesta_valida.length == 1 do
+	#send_task(pid_workers, num)
+	#resultados = receive_task(pid_pool, pid_workers, timeout)
+	Enum.each(pid_workers, spawn fn -> detect(x,detector_dir, pid_pool, timeout, num) end end)
+	respuesta_valida = receive_results(pid_workers.length())
+	solucionar_error(pid_pool,respuesta_valida)
+	respuesta_valida = Enum.uniq(Enum.filter(Enum.map(respuesta_valida, fn x -> elem(x,1) end), fn x -> x > 0 end)) #Filtro los resultados válidos y los comparo
+	if respuesta_valida.length() == 1 do
 		 respuesta_valida
 	else
 		detectorFallos(pid_pool, n_replicas + 1, 1.25*timeout, num) #incrementamos timeout o no?
@@ -111,19 +121,19 @@ end
 
 defmodule MasterProxy do
 
-	def initMaster(pool_pid) do
+	def initMaster(pool_dir, detector_id) do
 		Process.register(self(), :server)
 		Node.set_cookie(:cookie123)
 		IO.puts("MASTER ACTIVO")
-		spawn(fn -> DetectorFallos.init() end)
-		masterProxy(pool_pid)
+		spawn(fn -> DetectorFallos.init(detector_id, pool_dir) end)
+		masterProxy(pool_dir)
 	end
 
- def masterProxy(pool_pid) do
+ def masterProxy(pool_dir) do
 	receive do
 	{pid,num}  ->
 													IO.puts("master: PETICION RECIBIDA")
-													result = detectorFallos(pid_pool, n_replicas, timeout, num) #establecer timeout y numero de replicas iniciales
+													result = detectorFallos(pool_dir, n_replicas, timeout, num) #establecer timeout y numero de replicas iniciales
 													send(pid,{:result, result})
 	end
  end
@@ -205,13 +215,13 @@ end
 
 defmodule Worker do
 
-	def init do
+	def init() do
 		Process.sleep(10000)
 		spawn(fn -> latido() end)
 		worker(&Fib.fibonacci_tr/1, 1, :rand.uniform(10))
 	end
 
-	def latido do
+	def latido() do
 		receive do
 			{pid, :latido} -> send(pid, {:ok})
 		end
