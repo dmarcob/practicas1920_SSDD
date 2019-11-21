@@ -39,10 +39,8 @@ iex --name cliente@127.0.0.6
 Cliente.init(:"master@127.0.0.1")
 
 System.cmd("ssh", [
-      a755232@hendrix.cps.unizar.es,
-      "elixir --name worker1@127.0.0.1 --cookie palabrasecreta",
-      "--erl  \'-kernel_inet_dist_listen_min 32000\'",
-      "--erl  \'-kernel_inet_dist_listen_max 32049\'",
-      "--erl -detached",
-      "--no-halt #{fichero_programa_cargar}"
-    ])
+  "a755232@155.210.154.210",
+  "iex --name worker1@155.210.154.210 --cookie cookie123",
+  "--erl  \'-kernel_inet_dist_listen_min 32000\'",
+  "--erl  \'-kernel_inet_dist_listen_max 32049\'",
+])

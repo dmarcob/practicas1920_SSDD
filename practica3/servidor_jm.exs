@@ -168,6 +168,21 @@ def initPool(master_dir, workers_dir) do
     poolWorkers(workers_map, 0)
 end
 
+defmodule Prueba do
+def encender() do
+	System.cmd("bash", ["iex --name","worker2@127.0.0.2", "&"])
+end
+end
+
+def encenderRemoto() do
+	# System.cmd("ssh", [
+	#   "a755232@155.210.154.209",
+	#   "iex --name worker1@155.210.154.210 --cookie cookie123",
+	#   "--erl  \'-kernel_inet_dist_listen_min 32000\'",
+	#   "--erl  \'-kernel_inet_dist_listen_max 32049\'",
+	# ])
+end
+
 def actualizar(workers_map, enEspera, detector_pid, worker_dir, worker_pid, n) do
 	DEBUG.print("actualizar: BEGIN, enEspera: #{enEspera}")
 	DEBUG.inspect(worker_dir)
@@ -200,13 +215,14 @@ def poolWorkers(workers_map, enEspera) do
 
 																	  poolWorkers(workers_map, enEspera+1)
 																end
-															
+
 	{detector_pid,{worker_dir,worker_pid,  n}, :fin} ->	if n == 6 do
 																												DEBUG.print("pool: :fin, n==6 ")
 
 																												 #parar maquina
 																												 Node.spawn(worker_dir, System,:halt,[])
 																												 #Encender sistema y devolver worker a pool
+
 																												 actualizar(workers_map, enEspera, detector_pid, worker_dir, Node.spawn(worker_dir, Worker,:init,[]), 0)
 																										  else
 																												DEBUG.print("pool: :fin, n= #{n}")
