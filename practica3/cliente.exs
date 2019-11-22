@@ -15,10 +15,9 @@ defmodule Cliente do
 
   defp launch(pid, 1) do
 		IO.puts("Enviando ltima peticion")
-		#send(pid, {self(), 1500})
 		t_inicial = Time.utc_now()
-		#pidRecibir = spawn( fn ->
-		send(pid, {self(), 1500})
+		pidRecibir = spawn( fn ->
+		#send(pid, {self(), 1500})
 			receive do
 				{:result, l} -> l
 												t_final = Time.utc_now()
@@ -33,9 +32,9 @@ defmodule Cliente do
 												IO.puts("VIOLACION: Tiempo de respuesta")
 												end
 												IO.puts("_____________________________________")
-			end
-			# end end)
-			# send(pid, {pidRecibir, 1500})
+			#end
+			 end end)
+			 send(pid, {pidRecibir, 1500})
 	end
 
 
@@ -47,7 +46,7 @@ defmodule Cliente do
   end
 
   def genera_workload(server_pid) do
-		launch(server_pid, 3)# 6 + :random.uniform(2))													#cambiaar
+		launch(server_pid, 6 + :random.uniform(2))													#cambiaar
 		Process.sleep(2000 + :random.uniform(200))
   	genera_workload(server_pid)
   end

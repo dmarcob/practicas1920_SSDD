@@ -14,27 +14,7 @@
 
 defmodule Proxy do
 
-	def encender(nodo) do
-		IO.inspect nodo
-		nodo = String.Chars.to_string(nodo)
-		IO.puts("despues")
-		IO.inspect nodo
-			System.cmd("iex", ["--name","#{nodo}", "--erl", "-detached"])
-		Node.connect(String.to_atom(nodo))
-	end
 
-	def encenderRemoto(nodo) do
-		nodo = to_string(nodo)
-		ip = elem(String.split(nodo,"@"), 1)
-		IO.puts("---> #{ip}")
-		System.cmd("ssh", [
-		  "a755232@#{ip}",
-		  "iex --name #{nodo} --cookie cookie123",
-		  "--erl  \'-kernel_inet_dist_listen_min 32000\'",
-		  "--erl  \'-kernel_inet_dist_listen_max 32049\'",
-			"--erl -detached"
-		])
-	end
 
 def deteccion(worker_map, detector_pid, timeout, args) do
 	IO.puts("detect: BEGIN")
@@ -90,8 +70,8 @@ def correccion_reactiva(respuestas, 1) do
 	 Node.spawn(dir, System, :halt, [])
 	end
 	if resp < 0 do
-	 encender(dir)
-	 Process.sleep(1000)
+	 Nodo.encender(dir)
+	 Process.sleep(100)
 	 if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva1: NODO ERROR")
 	 pid_new = Node.spawn(dir, Worker, :init, [])
 	 [{dir, pid_new, 0}]
@@ -113,8 +93,8 @@ def correccion_reactiva(respuestas, num) when num > 1 do #respuestas = [{{dir, p
 	 	Node.spawn(dir, System, :halt, [])
 	 end
 	 if resp < 0 do
-	 	encender(dir)
-		Process.sleep(10000)
+	 	Nodo.encender(dir)
+		Process.sleep(100)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_reactiva(tl(respuestas), num - 1)
@@ -132,8 +112,8 @@ def correccion_preventiva(workers, 1) do
 		IO.puts("correccion_preventiva 1 #{dir} #{n}")
 		IO.inspect pid
 		Node.spawn(dir, System, :halt, [])
-		encender(dir)
-		Process.sleep(10000)
+		Nodo.encender(dir)
+		Process.sleep(100)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva 1: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}]
@@ -150,8 +130,8 @@ def correccion_preventiva(workers, num) when num > 1 do
 		IO.puts("correccion_preventiva #{num} #{dir} #{n}")
 		IO.inspect pid
 		Node.spawn(dir, System, :halt, [])
-		encender(dir)
-		Process.sleep(10000)
+		Nodo.encender(dir)
+		Process.sleep(100)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_preventiva(tl(workers), num - 1)
@@ -226,7 +206,7 @@ defmodule Master do
 											tres_worker = [w1, w2, w3]
 											IO.inspect(tres_worker)
 											master_pid = self()
-											spawn(fn -> Proxy.init(master_pid, pool_pid,tres_worker, 500, elem(hd(listaPendientes), 0), elem(hd(listaPendientes), 1)) end)
+											spawn(fn -> Proxy.init(master_pid, pool_pid,tres_worker, 300, elem(hd(listaPendientes), 0), elem(hd(listaPendientes), 1)) end)
 											master(pool_pid, tl(listaPendientes))
 
 		{cliente_pid, result, :respuesta}  -> IO.puts("master: mandandro RESULTADO al cliente #{result}")
@@ -249,6 +229,8 @@ def initPool(master_dir, workers_dir) do
 		#Node.set_cookie(:cookie123)
 		Node.connect(master_dir)
 		#Enum.each(workers_dir, fn(x) -> Node.connect(x) end) #Conectamos workers
+		Enum.each(workers_dir, fn x -> Nodo.encender(x) end)
+		Process.sleep(100)
   	workers_map = Enum.map(workers_dir, fn x -> {x, Node.spawn(x,Worker,:init,[]),  0} end) # [{worker_dir, worker_pid, n}]
 		IO.puts("POOL ACTIVO")
     poolWorkers({:server, master_dir}, workers_map, 0)

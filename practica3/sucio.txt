@@ -21,22 +21,24 @@ iex(3)> Test.tres(200)
 ----------------------------------------------------------
 master
 iex --name master@127.0.0.1
-  Master.init(:"pool@127.0.0.5")
+  Master.init(:"pool@127.0.0.2")
 
 
   workers
-  iex --name worker1@127.0.0.2
-  iex --name worker2@127.0.0.3
-  iex --name worker3@127.0.0.4
+    iex --name worker1@127.0.0.4
+  iex --name worker2@127.0.0.5
+  iex --name worker3@127.0.0.6
 
 
 pool
-iex --name pool@127.0.0.5
-Node.connect(:"worker1@127.0.0.2");Node.connect(:"worker2@127.0.0.3");Node.connect(:"worker3@127.0.0.4");Pool.initPool(:"master@127.0.0.1", [:"worker1@127.0.0.2",:"worker2@127.0.0.3", :"worker3@127.0.0.4"])
+iex --name pool@127.0.0.2
+Node.connect(:"worker1@127.0.0.4");Node.connect(:"worker2@127.0.0.5");Node.connect(:"worker3@127.0.0.6");
+Node.connect(:"worker4@127.0.0.7");Node.connect(:"worker5@127.0.0.8");Node.connect(:"worker6@127.0.0.9");
+Pool.initPool(:"master@127.0.0.1", [:"worker1@127.0.0.4",:"worker2@127.0.0.5", :"worker3@127.0.0.6", :"worker4@127.0.0.7",:"worker5@127.0.0.8", :"worker6@127.0.0.9"])
 
 cliente
-iex --name cliente@127.0.0.6
-Cliente.init(:"master@127.0.0.1")
+iex --name cliente@127.0.0.3
+  Cliente.init(:"master@127.0.0.1")
 
 System.cmd("ssh", [
   "a755232@155.210.154.209",
