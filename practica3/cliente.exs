@@ -4,15 +4,6 @@
 # FECHA: 18-10-2019
 # DESCRIPCIÓN: Código del cliente: inicialización + carga
 
-defmodule DEBUG do
-	def print(evento) do
-		IO.puts(evento)
-	end
-
-	def inspect(evento) do
-		IO.inspect evento
-	end
-end
 
 defmodule Cliente do
 
@@ -23,10 +14,11 @@ defmodule Cliente do
 	end
 
   defp launch(pid, 1) do
-		DEBUG.print("Enviando ltima peticion")
+		IO.puts("Enviando ltima peticion")
 		#send(pid, {self(), 1500})
 		t_inicial = Time.utc_now()
-		pidRecibir = spawn( fn ->
+		#pidRecibir = spawn( fn ->
+		send(pid, {self(), 1500})
 			receive do
 				{:result, l} -> l
 												t_final = Time.utc_now()
@@ -41,8 +33,9 @@ defmodule Cliente do
 												IO.puts("VIOLACION: Tiempo de respuesta")
 												end
 												IO.puts("_____________________________________")
-			 end end)
-			 send(pidRecibir, {self(), 1500})
+			end
+			# end end)
+			# send(pid, {pidRecibir, 1500})
 	end
 
 
@@ -54,7 +47,7 @@ defmodule Cliente do
   end
 
   def genera_workload(server_pid) do
-		launch(server_pid, 6 + :random.uniform(2))
+		launch(server_pid, 3)# 6 + :random.uniform(2))													#cambiaar
 		Process.sleep(2000 + :random.uniform(200))
   	genera_workload(server_pid)
   end
