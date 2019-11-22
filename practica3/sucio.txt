@@ -39,7 +39,7 @@ iex --name cliente@127.0.0.6
 Cliente.init(:"master@127.0.0.1")
 
 System.cmd("ssh", [
-  "a755232@155.210.154.210",
+  "a755232@155.210.154.209",
   "iex --name worker1@155.210.154.210 --cookie cookie123",
   "--erl  \'-kernel_inet_dist_listen_min 32000\'",
   "--erl  \'-kernel_inet_dist_listen_max 32049\'",

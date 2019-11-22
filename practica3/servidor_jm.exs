@@ -14,26 +14,7 @@
 
 defmodule DetectorFallos do
 
-	def pedirWorkersPool(pool_dir, 1) do
-		DEBUG.print("pedirWorkersPool 1 BEGIN")
-
-		send({:pool,pool_dir}, {self(), :peticion})
-		workers_map= receive do
-					{worker_dir, worker_pid, n} -> [{worker_dir, worker_pid, n}]
-					end
-	  workers_map
-  end
-
-def pedirWorkersPool(pool_dir, n_replicas) when n_replicas > 1 do
-	DEBUG.print("pedirWorkersPool #{n_replicas} BEGIN")
-	send({:pool,pool_dir}, {self(), :peticion})
-	workers_map = receive do
-					{worker_dir, worker_pid, n} -> [{worker_dir, worker_pid, n}]
-				end
-	workers_map ++ pedirWorkersPool(pool_dir, n_replicas - 1)
-end
-
-def detect(worker_map, detector_pid, pool_dir, timeout, args) do
+def detect(worker_map, detector_pid, timeout, args) do
 	DEBUG.print("detect: BEGIN")
 	DEBUG.print("detect: worker_map")
 	DEBUG.inspect(worker_map)
@@ -41,84 +22,60 @@ def detect(worker_map, detector_pid, pool_dir, timeout, args) do
 	DEBUG.print("detect:Eniviado peticion....")
 
 	send(elem(worker_map, 1), {:req, {self(), args}})
-	resultado = receive do
+	resultado = receive do                      #resultado = -1 -> reiniciar, resultado = -2 -> encender
 		 						{pid_w, num} ->
-														DEBUG.print("detect: Recibido repuesta")
-
 														if is_float(num) do
-															DEBUG.print("detect: Recibido repuesta. FALLO RESPONSE")
-
 															#Fallo response, necesita reiniciar
-															send({:pool, pool_dir}, {self(), worker_map, :reset})
 															-1
 														else
-															DEBUG.print("detect: Recibido repuesta CORRECTA")
-
-															send({:pool, pool_dir}, {self(), elem(worker_map, 0),elem(worker_map, 1), elem(worker_map, 2) + 1, :fin})
 															num
 														end
 					 			after
-						  	timeout ->  #comprobamos si la maquina a la que esperamos sigue viva -> latido? si sigue viva hacer spawn remoto con System.halt() y volver a arrancar
-						 						# si no sigue viva volver a arrancar
-													   # send(pid_worker, :latido)           #REVISAR
-														 # error = receive do
-														 # 				 	{:ok} -> #Fallo omission / timing, necesita reiniciar
-															# 										 send(pool_pid, {pid_w, :reset})
-															# 										 -1
-															# 		 		after
-															# 			 			50 ->  #Fallo crash, necesita encenderse
-															# 									 send(pool_pid, {pid_w, :turnon})
-															# 									 -2
-														 # end
-														 DEBUG.print("detect:HA CADUCADO TIMEOUT")
-
-														 send({:pool, pool_dir},{self(), worker_map, :reset})
+						  	timeout ->  if ping(elem(worker_map, 0)) == :pong
+														#Fallo omission, timing
 														 -1
+													 else #:pang
+													   #Fallo crash
+													 	 -2
 								end
 	DEBUG.print("detect: Enviando #{resultado} a detectors")
-
-	send(detector_pid, {resultado})
+	send(detector_pid, {worker_map, resultado})
 end
 
 def receive_results(1) do
-	respuesta = receive do
-							{resultado} -> resultado
+	[{worker_map, resultado}]  = receive do
+															{worker_map, resultado} -> [{worker_map, resultado}]
 	end
-	[respuesta]
+	[{worker_map, resultado}]
 end
 
 def receive_results(num_workers) when num_workers > 1 do
-	respuesta = receive do
-							{resultado} -> resultado
+	[{worker_map, resultado}] = receive do
+													    {worker_map, resultado} -> [{worker_map, resultado}]
 	end
-	[respuesta] ++ receive_results(num_workers - 1)
+	[{worker_map, resultado}] ++ receive_results(num_workers - 1)
 end
 
-def detectorFallos(pool_dir, n_replicas, timeout, args) do
-	DEBUG.print("detectorFallos: BEGIN")
-	DEBUG.print("detectorFallos: n_replicas: #{n_replicas}")
-	DEBUG.print("detectorFallos: args: #{args}")
+def detectorFallos(master_pid, pool_pid, tres_worker, timeout, cliente_pid, args) do
 
-	workers_map = pedirWorkersPool(pool_dir, n_replicas)
-	DEBUG.print("detectorFallos:")
-	DEBUG.inspect(workers_map)
-
-	Enum.each(workers_map, fn x -> spawn(fn -> detect(x, self(), pool_dir, timeout, args) end) end)
-	respuestas = receive_results(length(workers_map))
-	DEBUG.print("detectorFallos: recibido de detect: ")
-	DEBUG.inspect(respuestas)
-
-	respuesta_valida = Enum.uniq(Enum.filter([respuestas], fn x -> x > 0 end)) #Filtro los resultados válidos y los comparo
-	DEBUG.print("detectorFallos: respuesta_valida: #{respuesta_valida} ")
-
+	Enum.each(tres_worker, fn x -> spawn(fn -> detect(x, self(), timeout, args) end) end)
+	respuestas = receive_results(length(tres_worker))
+	respuesta_valida = Enum.uniq(Enum.map(respuestas, fn x -> elem(x, 1) end), fn x -> x > 0 end)) #Filtro los resultados válidos y los comparo
 	if respuesta_valida.length() == 1 do
-		DEBUG.print("detectorFallos: END ")
-
-		 respuesta_valida
+		 if args == 1500 do
+			#caso ultima peticion
+		 	send(master_pid, )
+		 end
+		 #Reinicio las máquinas que corresponden
+		 correccion_reactiva(respuestas)
+		 #Reinicio las máquinas que se han ejecutado correctamente n veces
+		 correccion_preventiva(respuestas)
+		 #Devuelvo workers
+		 send(pool_pid, ...)
 	else
-		DEBUG.print("detectorFallos: Me reinvoco ")
-
-	   detectorFallos(pool_dir, n_replicas + 1, 1.25*timeout, args) #incrementamos timeout o no?
+		 #Reinicio todas las maquinas
+		 correccion_reactiva(respuestas)
+	   detectorFallos(master_pid, pool_pid, [elem(hd(respuestas),0), elem(hd(tl(respuestas)),0), elem(hd(tl(tl(respuestas))),0)], timeout, args) #incrementamos timeout o no?
 	end
  	end
 end
@@ -133,19 +90,20 @@ defmodule Master do
 		Process.register(self(), :server)
 		#Node.set_cookie(:cookie123)
 		IO.puts("MASTER ACTIVO")
-		master(pool_dir)
+		master({pool_dir, :pool}, [])
 	end
 
-	def master(pool_dir) do
+	def master(pool_pid, listaPendientes) do
 		receive do
-		{pid,args}  ->
-														DEBUG.print("master: peticion cliente recibida: #{args}")
-														result = DetectorFallos.detectorFallos(pool_dir, 3, 500, args) #establecer timeout y numero de replicas iniciales
-														if args == 1500 do
-															 send(pid,{:result, result})
-														end
+		{cliente_pid, args}  ->	  send(pool_pid, {self(), :peticion})
+															master(pool_pid, listaPendientes ++ [{cliente_pid, args}])
+
+		[tres_worker] ->  spawn(fn -> DetectorFallos.detectorFallos(master_pid, pool_pid,[tres_worker], 500, elem(hd(listaPendientes), 0), elem(hd(listaPendientes), 1)) end)
+											master(pool_pid, tl(listaPendientes))
+
+		{cliente_pid, :respuesta}  -> send(cliente_pid,{:result, result})
+																	master(pool_pid, listaPendientes)
 		end
-		master(pool_dir)
 	end
 end
 
@@ -165,84 +123,54 @@ def initPool(master_dir, workers_dir) do
   	workers_map = Enum.map(workers_dir, fn x -> {x, Node.spawn(x,Worker,:init,[]),  0} end) # [{worker_dir, worker_pid, n}]
 		IO.inspect workers_map
 		IO.puts("POOL ACTIVO")
-    poolWorkers(workers_map, 0)
+    poolWorkers({master_dir, :server}, workers_map, 0)
+end
+
+
+def encender(nodo) do
+	to_string(nodo)
+	System.cmd("iex", ["--name","#{nodo}", "--detached"])
 end
 
 defmodule Prueba do
-def encender() do
-	System.cmd("bash", ["iex --name","worker2@127.0.0.2", "&"])
+def encenderRemoto(nodo) do
+	nodo = to_string(nodo)
+	ip = elem(String.split(nodo,"@"), 1)
+	IO.puts("---> #{ip}")
+	System.cmd("ssh", [
+	  "a755232@#{ip}",
+	  "iex --name #{nodo} --cookie cookie123",
+	  "--erl  \'-kernel_inet_dist_listen_min 32000\'",
+	  "--erl  \'-kernel_inet_dist_listen_max 32049\'",
+		"--erl -detached"
+	])
 end
 end
 
-def encenderRemoto() do
-	# System.cmd("ssh", [
-	#   "a755232@155.210.154.209",
-	#   "iex --name worker1@155.210.154.210 --cookie cookie123",
-	#   "--erl  \'-kernel_inet_dist_listen_min 32000\'",
-	#   "--erl  \'-kernel_inet_dist_listen_max 32049\'",
-	# ])
-end
 
-def actualizar(workers_map, enEspera, detector_pid, worker_dir, worker_pid, n) do
-	DEBUG.print("actualizar: BEGIN, enEspera: #{enEspera}")
-	DEBUG.inspect(worker_dir)
-	DEBUG.print("#{n}")
-	if enEspera>0 do
-		DEBUG.print("acttualizar: enEspera > 0 ")
-
-		 send(detector_pid, {worker_dir, worker_pid, n})
-		 poolWorkers(workers_map, enEspera-1)
-	else
-		DEBUG.print("acttualizar: enEspera == 0 ")
-
-		 poolWorkers(workers_map ++ [{worker_dir, worker_pid, n}], enEspera)
-	end
-end
-
-def poolWorkers(workers_map, enEspera) do
+def poolWorkers(master_pid, workers_map, enEspera) do
 	IO.puts("************************************")
 	IO.puts("poolWorkers: enEspera= #{enEspera}")
 	IO.puts("************************************")
 	IO.inspect workers_map
 	receive do
-	{detector_pid, :peticion}  ->	if length(workers_map) > 0 do
+	{master_pid, :peticion}  ->	if length(workers_map) > 2 do
 																		DEBUG.print("pool: :peticion, Worker concedido")
-
-										  							send(detector_pid, hd(workers_map))
-										  							poolWorkers(tl(workers_map), enEspera)
+										  							send(detector_pid, [hd(workers_map), hd(tl(workers_map)), hd(tl(tl(workers_map)))])
+										  							poolWorkers(tl(tl(tl(workers_map))), enEspera)
 																else
 																	DEBUG.print("pool: :peticion, Worker no concedidio, guardo peticion")
-
 																	  poolWorkers(workers_map, enEspera+1)
 																end
 
-	{detector_pid,{worker_dir,worker_pid,  n}, :fin} ->	if n == 6 do
-																												DEBUG.print("pool: :fin, n==6 ")
-
-																												 #parar maquina
-																												 Node.spawn(worker_dir, System,:halt,[])
-																												 #Encender sistema y devolver worker a pool
-
-																												 actualizar(workers_map, enEspera, detector_pid, worker_dir, Node.spawn(worker_dir, Worker,:init,[]), 0)
-																										  else
-																												DEBUG.print("pool: :fin, n= #{n}")
-
-																												 actualizar(workers_map, enEspera, detector_pid, worker_dir, worker_pid, n)
-																											end
-
-  {detector_pid,{worker_dir,worker_pid,  n}, :reset} -> #parar maquina
-																												DEBUG.print("pool: :reset ")
-																												DEBUG.inspect(worker_dir)
-																												DEBUG.print("#{n}")
-
-																											  Node.spawn(worker_dir, System,:halt,[])
-																											  #Encender sistema y devolver worker a pool
-																												actualizar(workers_map, enEspera, detector_pid, worker_dir, Node.spawn(worker_dir, Worker,:init,[]), 0)
-
-	{detector_pid,{worker_dir,worker_pid,n}, :turnon} ->	#Encender sistema y devolver worker a pool
-																											DEBUG.print("pool: :turnon ")
-
-																								actualizar(workers_map, enEspera, detector_pid, worker_dir, Node.spawn(worker_dir, Worker,:init,[]), 0)
+	{[tres_worker], :fin} ->			 if enEspera>0 do
+																		DEBUG.print("acttualizar: enEspera > 0 ")
+																		send(master_pid, [tres_worker])
+																		poolWorkers(workers_map, enEspera-1)
+																 else
+																	  DEBUG.print("acttualizar: enEspera == 0 ")
+																		poolWorkers(workers_map ++ [tres_worker], enEspera)
+																 end
   end
  end
 end
