@@ -13,34 +13,39 @@
 	#//////////////////////////////////////////////
 
 defmodule Proxy do
-
+		import IO.ANSI
 
 
 def deteccion(worker_map, detector_pid, timeout, args) do
-	IO.puts("detect: BEGIN")
-	IO.puts("detect: worker_map")
-	IO.inspect(worker_map)
-	IO.puts("detect:args #{args}")
-	IO.puts("detect:Eniviado peticion....")
-
 	send(elem(worker_map, 1), {:req, {self(), args}})
 	resultado = receive do                      #resultado = -1 -> reiniciar, resultado = -2 -> encender
 		 						num ->
 														#Recibimos resultado. Si es real, entonces fallo RESPONSE, sino, respuesta correcta
-														if is_float(num), do: -1, else: num
+														if is_float(num)  do
+															 	IO.write("Response error detected in ")
+																IO.inspect worker_map
+															 -1
+														else
+														  num
+														end
 					 			after
 														#No recibimos resultado. Si sigue vivo, fallo TIMING, OMISSION, sino, fallo CRASH
-						  	timeout -> IO.puts("HA CADUCADO TIMEOUT")
-									 if Node.ping(elem(worker_map, 0)) == :pong, do: -1, else: -2
+						  	timeout ->
+									 if Node.ping(elem(worker_map, 0)) == :pong
+									 do
+										 IO.write("Omission/Timing error detected in ")
+										 IO.inspect worker_map
+										 -1
+									 else
+										 IO.write("Crash error detected in ")
+										 IO.inspect worker_map
+										 -2
+									 end
 								end
-	IO.puts("detect: Enviando #{resultado} a detectors")
-	IO.inspect detector_pid
 	send(detector_pid, {worker_map, resultado})
 end
 
 def receive_results(1) do
-	IO.puts("receive_results 1")
-	IO.inspect self()
 	[{worker_map, resultado}]  = receive do
 															{worker_map, resultado} -> [{worker_map, resultado}]
 	end
@@ -48,9 +53,6 @@ def receive_results(1) do
 end
 
 def receive_results(num_workers) when num_workers > 1 do
-	IO.puts("receive_results #{num_workers}")
-	IO.inspect self()
-
 	[{worker_map, resultado}] = receive do
 													    {worker_map, resultado} -> [{worker_map, resultado}]
 	end
@@ -64,14 +66,13 @@ def correccion_reactiva(respuestas, 1) do
 	resp = elem(hd(respuestas), 1)
 
 	if resp == -1 do
-		IO.inspect respuestas
-		IO.puts("correccion_reactiva 1 #{dir} #{n} #{resp}")
-		IO.inspect pid
 	 Node.spawn(dir, System, :halt, [])
 	end
 	if resp < 0 do
+	 IO.write green <> "Reactive correction in " <>white
+	 IO.inspect hd(respuestas)
 	 Nodo.encender(dir)
-	 Process.sleep(100)
+	 Process.sleep(150)
 	 if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva1: NODO ERROR")
 	 pid_new = Node.spawn(dir, Worker, :init, [])
 	 [{dir, pid_new, 0}]
@@ -87,14 +88,13 @@ def correccion_reactiva(respuestas, num) when num > 1 do #respuestas = [{{dir, p
 	 resp = elem(hd(respuestas), 1)
 
 	 if resp == -1 do
-		 IO.inspect respuestas
-		 IO.puts("correccion_reactiva #{num} #{dir} #{n} #{resp}")
-		 IO.inspect pid
 	 	Node.spawn(dir, System, :halt, [])
 	 end
 	 if resp < 0 do
+	  IO.write green <> "Reactive correction in " <> white
+		IO.inspect hd(respuestas)
 	 	Nodo.encender(dir)
-		Process.sleep(100)
+		Process.sleep(150)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_reactiva(tl(respuestas), num - 1)
@@ -109,11 +109,11 @@ def correccion_preventiva(workers, 1) do
 	n = elem(hd(workers), 2)
 
 	if n >= 6 do
-		IO.puts("correccion_preventiva 1 #{dir} #{n}")
-		IO.inspect pid
+		IO.write green <> "Preventive correction (n==6), in " <>white
+		IO.inspect hd(workers)
 		Node.spawn(dir, System, :halt, [])
 		Nodo.encender(dir)
-		Process.sleep(100)
+		Process.sleep(150)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva 1: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}]
@@ -127,11 +127,11 @@ def correccion_preventiva(workers, num) when num > 1 do
 	pid = elem(hd(workers), 1)
 	n = elem(hd(workers), 2)
 	if n >= 6 do
-		IO.puts("correccion_preventiva #{num} #{dir} #{n}")
-		IO.inspect pid
+		IO.write green <> "Preventive correction (n==6), in "<> white
+		IO.inspect hd(workers)
 		Node.spawn(dir, System, :halt, [])
 		Nodo.encender(dir)
-		Process.sleep(100)
+		Process.sleep(150)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_preventiva(tl(workers), num - 1)
@@ -141,41 +141,23 @@ def correccion_preventiva(workers, num) when num > 1 do
 end
 
 def init(master_pid, pool_pid, tres_worker, timeout, cliente_pid, args) do
-	IO.puts("proxy: BEGIN")
-	IO.inspect tres_worker
 	proxy_id = self()
 	Enum.each(tres_worker, fn x -> spawn(fn -> deteccion(x, proxy_id, timeout, args) end) end)
 	respuestas = receive_results(length(tres_worker)) #[{{dir, pid, n}, resp}]
-		IO.puts("proxy: respuestas")
-		IO.inspect respuestas
 	respuesta_valida = Enum.uniq(Enum.map(respuestas, fn x -> elem(x, 1) end), fn x -> x > 0 end) #Filtro los resultados válidos y los comparo
 	if length(respuesta_valida) == 1 do
-		IO.puts("proxy: RESPUESTA_VALIDA")
-		IO.inspect respuesta_valida
-		IO.puts("------------------------------------------------------------#{args}")
 		 if args == 1500 do
-			 IO.puts("----------------------------------------------------proxy: ULTIMA PETICION")
 			#caso ultima peticion
-			IO.inspect master_pid
-			IO.puts("--------------------------DESPUES")
 		 	send(master_pid, {cliente_pid, List.first(respuesta_valida), :respuesta})
 		 end
 		 #Reinicio las máquinas que corresponden
 		 tres_worker_fixed = correccion_reactiva(respuestas, 3) #[{dir, pid, n}]
-		 IO.puts("proxy: tres_worker_fixed reactiva")
-		 IO.inspect tres_worker_fixed
 		 #Reinicio las máquinas que se han ejecutado correctamente n veces
 		 tres_worker_fixed = correccion_preventiva(tres_worker_fixed, 3)  #[{dir, pid, n}]
-		 IO.puts("proxy: tres_worker_preventiva")
-		 IO.inspect tres_worker_fixed
 		 #Devuelvo workers
-		 IO.puts("proxy: Devolviendo workers")
 		 send(pool_pid, {tres_worker_fixed, :fin})
-		 IO.puts("proxy: END")
 	else
 		 #Reinicio todas las maquinas
-		 IO.puts("proxy: RESPUESTA_NO CONSISTENTE")
-		 IO.inspect respuesta_valida
 		 tres_worker_fixed = correccion_reactiva(respuestas, 3) #[{dir, pid, n}]
 	   init(master_pid, pool_pid, tres_worker_fixed, timeout, cliente_pid, args) #incrementamos timeout o no?
 	end
@@ -192,24 +174,22 @@ defmodule Master do
 		Process.register(self(), :server)
 		#Node.set_cookie(:cookie123)
 		IO.puts("MASTER ACTIVO")
-		IO.inspect self()
 		master({:pool, pool_dir}, [])
 	end
 
 	def master(pool_pid, listaPendientes) do
 		receive do
-		{cliente_pid, args}  ->	  IO.puts("master: peticion cliente, #{args}")
+		{cliente_pid, args}  ->
 															send(pool_pid, {self(), :peticion})
 															master(pool_pid, listaPendientes ++ [{cliente_pid, args}])
 
-		{[w1, w2, w3], :worker, :toma} ->  IO.puts("master: recibidos 3 worker ")
+		{[w1, w2, w3], :worker, :toma} ->
 											tres_worker = [w1, w2, w3]
-											IO.inspect(tres_worker)
 											master_pid = self()
 											spawn(fn -> Proxy.init(master_pid, pool_pid,tres_worker, 300, elem(hd(listaPendientes), 0), elem(hd(listaPendientes), 1)) end)
 											master(pool_pid, tl(listaPendientes))
 
-		{cliente_pid, result, :respuesta}  -> IO.puts("master: mandandro RESULTADO al cliente #{result}")
+		{cliente_pid, result, :respuesta}  ->
 																					send(cliente_pid,{:result, result})
 																					master(pool_pid, listaPendientes)
 		end
@@ -224,13 +204,14 @@ end
 
 defmodule Pool do
 
-def initPool(master_dir, workers_dir) do
+def initPool(master_dir, worker_dir, n) do
     Process.register(self(), :pool)
 		#Node.set_cookie(:cookie123)
 		Node.connect(master_dir)
-		#Enum.each(workers_dir, fn(x) -> Node.connect(x) end) #Conectamos workers
+		workers_dir = Enum.map(1..n, fn x -> String.to_atom("worker" <> "#{x + 3}@" <> worker_dir) end)
+		IO.inspect workers_dir
 		Enum.each(workers_dir, fn x -> Nodo.encender(x) end)
-		Process.sleep(100)
+		Process.sleep(2000)
   	workers_map = Enum.map(workers_dir, fn x -> {x, Node.spawn(x,Worker,:init,[]),  0} end) # [{worker_dir, worker_pid, n}]
 		IO.puts("POOL ACTIVO")
     poolWorkers({:server, master_dir}, workers_map, 0)
@@ -299,12 +280,23 @@ defmodule Worker do
 			[op, false]
 		end
 		receive do
-			{:req, {pid, args}} ->  IO.puts("Recibido petición: ")
-														  IO.inspect([op, omission, args])
+			{:req, {pid, args}} ->
 															if not omission, do: send(pid, op.(args))
 		end
 		worker(new_op, rem(service_count + 1, k), k)
 	end
+end
+
+
+defmodule Pow do
+  require Integer
+
+  def pow(_, 0), do: 1
+  def pow(x, n) when Integer.is_odd(n), do: x * pow(x, n - 1)
+  def pow(x, n) do
+    result = pow(x, div(n, 2))
+    result * result
+  end
 end
 
 defmodule Fib do
@@ -325,9 +317,11 @@ defmodule Fib do
  		(x_of(n) - y_of(n)) / @golden_n
 	end
  	defp x_of(n) do
-		:math.pow((1 + @golden_n) / 2, n)
+		#:math.pow((1 + @golden_n) / 2, n)
+		Pow.pow((1 + @golden_n) / 2, n)
 	end
 	def y_of(n) do
-		:math.pow((1 - @golden_n) / 2, n)
+		#:math.pow((1 - @golden_n) / 2, n)
+		Pow.pow((1 - @golden_n) / 2, n)
 	end
 end
