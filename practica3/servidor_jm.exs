@@ -72,7 +72,7 @@ def correccion_reactiva(respuestas, 1) do
 	 IO.write green <> "Reactive correction in " <>white
 	 IO.inspect hd(respuestas)
 	 Nodo.encender(dir)
-	 Process.sleep(150)
+	 Process.sleep(2000)
 	 if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva1: NODO ERROR")
 	 pid_new = Node.spawn(dir, Worker, :init, [])
 	 [{dir, pid_new, 0}]
@@ -94,7 +94,7 @@ def correccion_reactiva(respuestas, num) when num > 1 do #respuestas = [{{dir, p
 	  IO.write green <> "Reactive correction in " <> white
 		IO.inspect hd(respuestas)
 	 	Nodo.encender(dir)
-		Process.sleep(150)
+		Process.sleep(200)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_reactiva(tl(respuestas), num - 1)
@@ -113,7 +113,7 @@ def correccion_preventiva(workers, 1) do
 		IO.inspect hd(workers)
 		Node.spawn(dir, System, :halt, [])
 		Nodo.encender(dir)
-		Process.sleep(150)
+		Process.sleep(2000)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva 1: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}]
@@ -131,7 +131,7 @@ def correccion_preventiva(workers, num) when num > 1 do
 		IO.inspect hd(workers)
 		Node.spawn(dir, System, :halt, [])
 		Nodo.encender(dir)
-		Process.sleep(150)
+		Process.sleep(2000)
 		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_preventiva(tl(workers), num - 1)
@@ -211,7 +211,7 @@ def initPool(master_dir, worker_dir, n) do
 		workers_dir = Enum.map(1..n, fn x -> String.to_atom("worker" <> "#{x + 3}@" <> worker_dir) end)
 		IO.inspect workers_dir
 		Enum.each(workers_dir, fn x -> Nodo.encender(x) end)
-		Process.sleep(2000)
+		Process.sleep(4000)
   	workers_map = Enum.map(workers_dir, fn x -> {x, Node.spawn(x,Worker,:init,[]),  0} end) # [{worker_dir, worker_pid, n}]
 		IO.puts("POOL ACTIVO")
     poolWorkers({:server, master_dir}, workers_map, 0)
