@@ -20,13 +20,13 @@ iex(3)> Test.tres(200)
 
 ----------------------------------------------------------
 master
-iex --name master@127.0.0.1 --cookie cookie123
-Master.init(:"pool@127.0.0.2")
+iex --name master@155.210.154.194 --cookie cookie123
+Master.init(:"pool@155.210.154.194")
 
 
     pool
-iex --name pool@127.0.0.2  --cookie cookie123
-    Pool.initPool(:"master@127.0.0.1", "127.0.0.6", 24)
+iex --name pool@155.210.154.194  --cookie cookie123
+    Pool.initPool(:"master@127.0.0.1", "155.210.154.191", 24)
 
 
 

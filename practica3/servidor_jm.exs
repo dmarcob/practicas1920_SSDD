@@ -72,8 +72,8 @@ def correccion_reactiva(respuestas, 1) do
 	 IO.write green <> "Reactive correction in " <>white
 	 IO.inspect hd(respuestas)
 	 Nodo.encender(dir)
-	 Process.sleep(2000)
-	 if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva1: NODO ERROR")
+	 Nodo.esperarNodoOperativo(dir)
+	 #if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva1: NODO ERROR")
 	 pid_new = Node.spawn(dir, Worker, :init, [])
 	 [{dir, pid_new, 0}]
   else
@@ -94,8 +94,8 @@ def correccion_reactiva(respuestas, num) when num > 1 do #respuestas = [{{dir, p
 	  IO.write green <> "Reactive correction in " <> white
 		IO.inspect hd(respuestas)
 	 	Nodo.encender(dir)
-		Process.sleep(200)
-		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
+	 	Nodo.esperarNodoOperativo(dir)
+		#if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_reactiva(tl(respuestas), num - 1)
 	 else
@@ -113,8 +113,8 @@ def correccion_preventiva(workers, 1) do
 		IO.inspect hd(workers)
 		Node.spawn(dir, System, :halt, [])
 		Nodo.encender(dir)
-		Process.sleep(2000)
-		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva 1: NODO ERROR")
+	 	Nodo.esperarNodoOperativo(dir)
+		#if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva 1: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}]
 	else
@@ -131,8 +131,8 @@ def correccion_preventiva(workers, num) when num > 1 do
 		IO.inspect hd(workers)
 		Node.spawn(dir, System, :halt, [])
 		Nodo.encender(dir)
-		Process.sleep(2000)
-		if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
+	 	Nodo.esperarNodoOperativo(dir)
+		#if (Node.ping(dir) == :pang), do: IO.puts("correccion_reactiva #{num}: NODO ERROR")
 		pid_new = Node.spawn(dir, Worker, :init, [])
 		[{dir, pid_new, 0}] ++ correccion_preventiva(tl(workers), num - 1)
 	else
@@ -288,16 +288,6 @@ defmodule Worker do
 end
 
 
-defmodule Pow do
-  require Integer
-
-  def pow(_, 0), do: 1
-  def pow(x, n) when Integer.is_odd(n), do: x * pow(x, n - 1)
-  def pow(x, n) do
-    result = pow(x, div(n, 2))
-    result * result
-  end
-end
 
 defmodule Fib do
 	def fibonacci(0), do: 0
@@ -317,11 +307,9 @@ defmodule Fib do
  		(x_of(n) - y_of(n)) / @golden_n
 	end
  	defp x_of(n) do
-		#:math.pow((1 + @golden_n) / 2, n)
-		Pow.pow((1 + @golden_n) / 2, n)
+		:math.pow((1 + @golden_n) / 2, n)
 	end
 	def y_of(n) do
-		#:math.pow((1 - @golden_n) / 2, n)
-		Pow.pow((1 - @golden_n) / 2, n)
+		:math.pow((1 - @golden_n) / 2, n)
 	end
 end

@@ -1,0 +1,104 @@
+CLIENTE ACTIVO
+Tiempo total tarea: 56ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 9ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 1031ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 1105ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 3ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 38ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 35ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 8ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 15ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 9ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 685ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 1085ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 29ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 25ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 630ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 13ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 736ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 28ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 645ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 25ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 11ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 15ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 700ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 1335ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 23ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 1264ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+Tiempo total tarea: 10ms
+OK: Se cumple tiempo de respuesta
+--------------------------------------
+

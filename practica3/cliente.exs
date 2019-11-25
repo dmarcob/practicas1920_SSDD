@@ -15,9 +15,9 @@ defmodule Cliente do
 	end
 
   defp launch(pid, 1) do
-		t_inicial = Time.utc_now()
+		#t_inicial = Time.utc_now()
 		pidRecibir = spawn( fn ->
-		#send(pid, {self(), 1500})
+			t_inicial = Time.utc_now()
 			receive do
 				{:result, l} -> l
 												t_final = Time.utc_now()
