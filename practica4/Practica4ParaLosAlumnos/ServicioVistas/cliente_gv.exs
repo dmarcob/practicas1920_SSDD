@@ -36,6 +36,8 @@ defmodule ClienteGV do
   """
   @spec latido(node, integer) :: {ServidorGV.t_vista(), boolean}
   def latido(nodo_cliente, num_vista) do
+    IO.puts("latido: INIT")
+
     send({:cliente_gv, nodo_cliente}, {:envia_latido, num_vista, self()})
 
     # esperar respuesta del latido
@@ -43,6 +45,7 @@ defmodule ClienteGV do
       {:vista_tentativa, vista, is_ok?} -> {vista, is_ok?}
     after
       @tiempo_espera_de_respuesta ->
+        IO.puts("latido: ERROR TIMEOUT")
         {ServidorGV.vista_inicial(), false}
     end
   end
@@ -52,14 +55,19 @@ defmodule ClienteGV do
   """
   @spec obten_vista(atom) :: {ServidorGV.t_vista(), boolean}
   def obten_vista(nodo_cliente) do
+    IO.puts("obten_vista: INIT")
+
     send({:cliente_gv, nodo_cliente}, {:obten_vista_valida, self()})
 
     # esperar respuesta del latido
     receive do
+
       {:vista_valida, vista, is_ok?} -> {vista, is_ok?}
     after
       @tiempo_espera_de_respuesta ->
+        IO.puts("Obten_vista: ERROR TIMEOUT")
         {ServidorGV.vista_inicial(), false}
+    #  {%{num_vista: 0, primario: :pene, copia: :undefined}, true}
     end
   end
 
@@ -68,8 +76,10 @@ defmodule ClienteGV do
   """
   @spec primario(atom) :: node
   def primario(nodo_cliente) do
+    IO.puts("primario: INIT")
     resultado = obten_vista(nodo_cliente)
-
+    IO.puts("primario")
+    IO.inspect resultado
     case resultado do
       {vista, true} -> vista.primario
       {_vista, false} -> :undefined
@@ -96,6 +106,8 @@ defmodule ClienteGV do
   end
 
   defp procesa_latido(nodo_servidor_gv, num_vista, pid_maestro) do
+    IO.puts("procesa_latido: INIT")
+
     send({:servidor_gv, nodo_servidor_gv}, {:latido, num_vista, Node.self()})
 
     # esperar respuesta del latido
@@ -104,11 +116,13 @@ defmodule ClienteGV do
         send(pid_maestro, {:vista_tentativa, vista, encontrado?})
     after
       @tiempo_espera_de_respuesta ->
+        IO.puts("procesa_latido: ERROR TIMEOUT")
         send(pid_maestro, {:vista_tentativa, ServidorGV.vista_inicial(), false})
     end
   end
 
   defp procesa_obten_vista(nodo_servidor_gv, pid_maestro) do
+    IO.puts("procesa_obten_vista: INIT")
     send({:servidor_gv, nodo_servidor_gv}, {:obten_vista_valida, self()})
 
     receive do
@@ -116,6 +130,7 @@ defmodule ClienteGV do
         send(pid_maestro, {:vista_valida, vista, coincide?})
     after
       @tiempo_espera_de_respuesta ->
+        IO.puts("procesa_obten_vista: ERROR_TIMEOUT")
         send(pid_maestro, {:vista_valida, ServidorGV.vista_inicial(), false})
     end
   end
