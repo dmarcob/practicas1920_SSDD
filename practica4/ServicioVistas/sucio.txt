@@ -1,0 +1,27 @@
+servidor
+elixirc servidor_gv.exs
+iex --name sv@127.0.0.1 --cookie palabrasecreta servidor_gv.exs
+ServidorGV.init_sv()
+
+lo demas
+./validar_servicio_vistas.sh
+
+
+def primario_no_confirma_vista(c1, c2, c3) do
+    IO.puts("HOLAA")
+    #nuevo servidor en espera (primario: c3, copia c1, espera [c2])
+    ClienteGV.latido(c2, 0)
+    #vista tentativa ()
+    {vista, _} = ClienteGV.latido(c1, 4)
+    IO.inspect vista
+    # #c2 pasa a copia (primario: c3, copia c2, espera [])
+    # espera_pasa_a_copia(c1, c3, 4, ServidorGV.latidos_fallidos() * 2)
+    # #c3 confirma vista
+    # ClienteGV.latido(c1, vista.num_vista + 1)
+    # #nuevo servidor en espera (primario: c3, copia c2, espera [c1])
+    # ClienteGV.latido(c1, 0)
+    # #c1 pasa a copia (primario: c3, copia c1, espera [])
+    # espera_pasa_a_copia(c1, c3, 4, ServidorGV.latidos_fallidos() * 2)
+    # #c3 NO confirma vista (cae)
+    # ClienteGV.latido(c3, 0)
+end

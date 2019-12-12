@@ -54,105 +54,117 @@ defmodule GestorVistasTest do
 
     IO.puts(" ... Superado")
   end
-  #
-  # # Test 3 : primer nodo copia
-  # # @tag :deshabilitado
-  # test "Primer nodo copia", %{c1: c1, c2: c2} do
-  #   IO.puts("Test 3: Primer nodo copia ...")
-  #
-  #   # Solo interesa vista tentativa
-  #   {vista, _} = ClienteGV.latido(c1, -1)
-  #   primer_nodo_copia(c1, c2, ServidorGV.latidos_fallidos() * 2)
-  #
-  #   # validamos nueva vista por estar completa
-  #   ClienteGV.latido(c1, vista.num_vista + 1)
-  #
-  #   comprobar_valida(c1, c1, c2, vista.num_vista + 1)
-  #
-  #   IO.puts(" ... Superado")
-  # end
-  #
-  # ## Test 4 : Después, Copia (C2) toma el relevo si Primario (C1) falla.
-  # # @tag :deshabilitado
-  # test "Copia releva primario", %{c2: c2} do
-  #   IO.puts("Test4 : copia toma relevo si primario falla ...")
-  #
-  #   {vista, _} = ClienteGV.latido(c2, 2)
-  #
-  #   copia_releva_primario(c2,vista.num_vista, ServidorGV.latidos_fallidos() * 2)
-  #
-  #   comprobar_tentativa(c2, c2, :undefined, vista.num_vista + 1)
-  #
-  #   IO.puts(" ... Superado")
-  # end
-  #
-  # ## Test 5 : Nodo rearrancado (C1) se convierte en copia.
-  # # @tag :deshabilitado
-  # test "Servidor rearrancado se conviert en copia", %{c1: c1, c2: c2} do
-  #   IO.puts("Test 5: Servidor rearrancado se convierte en copia ...")
-  #
-  #   # vista tentativa
-  #   {vista, _} = ClienteGV.latido(c2, 2)
-  #   servidor_rearranca_a_copia(c1, c2, 2, ServidorGV.latidos_fallidos() * 2)
-  #
-  #   # validamos nueva vista por estar DE NUEVO completa
-  #   # vista valida debería ser 4
-  #   ClienteGV.latido(c2, vista.num_vista + 1)
-  #
-  #   comprobar_valida(c2, c2, c1, vista.num_vista + 1)
-  #
-  #   IO.puts(" ... Superado")
-  # end
-  #
-  # ## Test 6 : C3 como nuevo nodo (en espera), después C2 cae como primario.
-  # ##          Resultado : copia (C1) pasa a primario y C3 pasa a nodo copia
-  # # @tag :deshabilitado
-  # test "Servidor en espera se convierte en copia", %{c1: c1, c3: c3} do
-  #   IO.puts("Test 6: Servidor en espera se convierte en copia ...")
-  #
-  #   # nuevo servidor en espera
-  #   ClienteGV.latido(c3, 0)
-  #   # vista tentativa
-  #   {vista, _} = ClienteGV.latido(c1, 4)
-  #   espera_pasa_a_copia(c1, c3, 4, ServidorGV.latidos_fallidos() * 2)
-  #
-  #   # validamos nueva vista por estar DE NUEVO completa
-  #   # vista valida debería ser 5
-  #   ClienteGV.latido(c1, vista.num_vista + 1)
-  #
-  #   comprobar_valida(c1, c1, c3, vista.num_vista + 1)
-  #
-  #   IO.puts(" ... Superado")
-  # end
-  #
-  # ## Test 7 : Primario rearrancado (C1) tratado como caido, debe considerarlo
-  # #           caido aunque envie latido, y es convertido en nodo en espera.
-  # # @tag :deshabilitado
-  # test "Primario rearrancado tratado como caido", %{c1: c1, c3: c3} do
-  #   IO.puts("Test 7: Primario rearrancado tratado como caido ...")
-  #
-  #   # cae y recupera c1, pasa de primario a  servidor en espera
-  #   ClienteGV.latido(c1, 0)
-  #   # vista tentativa
-  #   {vista, _} = ClienteGV.latido(c1, 5)
-  #   primario_rearrancado(c1, c3, 5, ServidorGV.latidos_fallidos() * 2)
-  #
-  #   comprobar_tentativa(c3, c3, c1, vista.num_vista)
-  # end
 
-
-  ## Test 8 : Servidor de vistas espera a que primario confirme vista
-  ##          pero este no lo hace.
-  ##          Poner C3 como Primario, C1 como Copia, C2 para comprobar
-  ##          - C3 no confirma vista en que es primario,
-  ##          - Cae, pero C1 no es promocionado porque C3 no confimo !
-  # primario_no_confirma_vista(C1, C2, C3),
+  # Test 3 : primer nodo copia
   # @tag :deshabilitado
+  test "Primer nodo copia", %{c1: c1, c2: c2} do
+    IO.puts("Test 3: Primer nodo copia ...")
+
+    # Solo interesa vista tentativa
+    {vista, _} = ClienteGV.latido(c1, -1)
+    primer_nodo_copia(c1, c2, ServidorGV.latidos_fallidos() * 2)
+
+    # validamos nueva vista por estar completa
+    ClienteGV.latido(c1, vista.num_vista + 1)
+
+    comprobar_valida(c1, c1, c2, vista.num_vista + 1)
+
+    IO.puts(" ... Superado")
+  end
+
+  ## Test 4 : Después, Copia (C2) toma el relevo si Primario (C1) falla.
+  # @tag :deshabilitado
+  test "Copia releva primario", %{c2: c2} do
+    IO.puts("Test4 : copia toma relevo si primario falla ...")
+
+    {vista, _} = ClienteGV.latido(c2, 2)
+
+    copia_releva_primario(c2,vista.num_vista, ServidorGV.latidos_fallidos() * 2)
+
+    comprobar_tentativa(c2, c2, :undefined, vista.num_vista + 1)
+
+    IO.puts(" ... Superado")
+  end
+
+  ## Test 5 : Nodo rearrancado (C1) se convierte en copia.
+  # @tag :deshabilitado
+  test "Servidor rearrancado se conviert en copia", %{c1: c1, c2: c2} do
+    IO.puts("Test 5: Servidor rearrancado se convierte en copia ...")
+
+    # vista tentativa
+    {vista, _} = ClienteGV.latido(c2, 2)
+    servidor_rearranca_a_copia(c1, c2, 2, ServidorGV.latidos_fallidos() * 2)
+
+    # validamos nueva vista por estar DE NUEVO completa
+    # vista valida debería ser 4
+    ClienteGV.latido(c2, vista.num_vista + 1)
+
+    comprobar_valida(c2, c2, c1, vista.num_vista + 1)
+
+    IO.puts(" ... Superado")
+  end
+
+  ## Test 6 : C3 como nuevo nodo (en espera), después C2 cae como primario.
+  ##          Resultado : copia (C1) pasa a primario y C3 pasa a nodo copia
+  # @tag :deshabilitado
+  test "Servidor en espera se convierte en copia", %{c1: c1, c3: c3} do
+    IO.puts("Test 6: Servidor en espera se convierte en copia ...")
+
+    # nuevo servidor en espera
+    ClienteGV.latido(c3, 0)
+    # vista tentativa
+    {vista, _} = ClienteGV.latido(c1, 4)
+    IO.puts("AQUIIII")
+    IO.inspect vista
+
+    espera_pasa_a_copia(c1, c3, 4, ServidorGV.latidos_fallidos() * 2)
+
+    # validamos nueva vista por estar DE NUEVO completa
+    # vista valida debería ser 5
+    ClienteGV.latido(c1, vista.num_vista + 1)
+    comprobar_valida(c1, c1, c3, vista.num_vista + 1)
+
+    IO.puts(" ... Superado")
+  end
+
+  ## Test 7 : Primario rearrancado (C1) tratado como caido, debe considerarlo
+  #           caido aunque envie latido, y es convertido en nodo en espera.
+  # @tag :deshabilitado
+  test "Primario rearrancado tratado como caido", %{c1: c1, c3: c3} do
+    IO.puts("Test 7: Primario rearrancado tratado como caido ...")
+
+    # cae y recupera c1, pasa de primario a  servidor en espera
+    ClienteGV.latido(c1, 0)
+    # vista tentativa
+    {vista, _} = ClienteGV.latido(c1, 5)
+    primario_rearrancado(c1, c3, 5, ServidorGV.latidos_fallidos() * 2)
+
+    comprobar_tentativa(c3, c3, c1, vista.num_vista)
+  end
+
+
+  # Test 8 : Servidor de vistas espera a que primario confirme vista
+  #          pero este no lo hace.
+  #          Poner C3 como Primario, C1 como Copia, C2 para comprobar
+  #          - C3 no confirma vista en que es primario,
+  #          - Cae, pero C1 no es promocionado porque C3 no confimo !
+  #@tag :deshabilitado
+  test "Primario no confirma la vista", %{c1: c1, c2: c2, c3: c3} do
+    IO.puts("Test8: Primario no confirma vista")
+    primario_no_confirma_vista(c1, c2, c3)
+
+  end
+
 
 
   ## Test 9 : Si anteriores servidores caen (Primario  y Copia),
   ##       un nuevo servidor sin inicializar no puede convertirse en primario.
-  # sin_inicializar_no(C1, C2, C3),
+  test "Nuevo cliente no se convierte en primario error critico", %{c1: c1, c2: c2, c3: c3} do
+    IO.puts("Test9: Nuevo cliente no se convierte en primario error critico")
+     sin_inicializar_no(c1, c2, c3)
+  end
+
+
 
 
   # ------------------ FUNCIONES DE APOYO A TESTS ------------------------
@@ -163,8 +175,8 @@ defmodule GestorVistasTest do
     # Poner en marcha nodos servidor gestor de vistas y clientes
     # startNodos(%{tipoNodo: %{maquina: list(nombres)}})
     numMaquinas = length(maquinas)
-    sv = ServidorGV.startNodo("sv", Enum.at(maquinas, 0))
-
+    #sv = ServidorGV.startNodo("sv", Enum.at(maquinas, 0))  #TODO:descomentar
+     sv = :"sv@127.0.0.1"
     clientes =
       for i <- 1..3 do
         # solo una máquina : la máquina local
@@ -183,7 +195,7 @@ defmodule GestorVistasTest do
 
     # Poner en marcha servicios de cada uno
     # startServices(%{tipo: [nodos]})
-    ServidorGV.startService(sv)
+  #  ServidorGV.startService(sv)                  #TODO: descomentar
     c1 = ClienteGV.startService(Enum.at(clientes, 0), sv)
     c2 = ClienteGV.startService(Enum.at(clientes, 1), sv)
     c3 = ClienteGV.startService(Enum.at(clientes, 2), sv)
@@ -301,6 +313,20 @@ defmodule GestorVistasTest do
       Process.sleep(ServidorGV.intervalo_latidos())
       primario_rearrancado(c1, c3, num_vista_tentativa, x - 1)
     end
+  end
+
+  defp primario_no_confirma_vista(c1, c2, c3) do
+    {vista, _} = ClienteGV.latido(c1, 0)
+    IO.inspect vista
+    {vista,_} = ClienteGV.latido(c1, vista.num_vista)
+    IO.inspect vista
+    {vista,_} = ClienteGV.latido(c3, 0)
+    IO.inspect vista
+    comprobar_tentativa(c2, :undefined, :undefined, 0)
+  end
+
+  defp sin_inicializar_no(c1, c2, c3) do
+    comprobar_tentativa(c1, :undefined, :undefined, 0)
   end
 
   defp comprobar_tentativa(nodo_cliente, nodo_primario, nodo_copia, n_vista) do
