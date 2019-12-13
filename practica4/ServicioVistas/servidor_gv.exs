@@ -85,14 +85,12 @@ defmodule ServidorGV do
     defp bucle_recepcion(estadoGV, timeouts_primario, timeouts_copia) do
       {new_estadoGV, timeouts_primario, timeouts_copia } = receive do
                     {:latido, n_vista_latido, nodo_emisor} ->
-                      IO.puts("bucle_recepcion: :latido")
-                      IO.inspect estadoGV
-                       procesar_latido(estadoGV,timeouts_primario, timeouts_copia, n_vista_latido, nodo_emisor)
-
+                        IO.puts("bucle_recepcion: :latido")
+                        IO.inspect estadoGV
+                        procesar_latido(estadoGV,timeouts_primario, timeouts_copia, n_vista_latido, nodo_emisor)
 
                     {:obten_vista_valida, pid} ->
-                      IO.puts("bucle_recepcion: :obten_vista_valida")
-
+                        IO.puts("bucle_recepcion: :obten_vista_valida")
                         send(pid,{:vista_valida, estadoGV.vista_v, estadoGV.valida})
                         {estadoGV, timeouts_primario, timeouts_copia }
 
@@ -109,10 +107,7 @@ defmodule ServidorGV do
       case estadoGV.estado do
         :wait_primario ->
           IO.puts("procesar_latido: :wait_primario,")
-              new_vista_t = Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
-              |> Map.put(:primario, nodo_emisor)
-              new_estadoGV = Map.put(estadoGV, :vista_t, new_vista_t)
-              |> Map.put(:estado, :wait_copia)
+              new_estadoGV = update_estadoGV(estadoGV, [{:num_vista}, {:primario, nodo_emisor}, {:estado, :wait_copia}])
               send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
               {new_estadoGV,0, 0}
 
@@ -124,57 +119,43 @@ defmodule ServidorGV do
                       {new_estadoGV,timeouts_primario, timeouts_copia} = cond do
                             estadoGV.vista_t.copia == :undefined ->
                               IO.puts("procesar_latido: estadoGV.vista_t.copia == :undefined ")
-
                                 #nodo_espera pasa a copia
-                                new_vista_t = Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
-                                |> Map.put(:copia, nodo_emisor)
-                                new_estadoGV = Map.put(estadoGV, :vista_t, new_vista_t)
+                                new_estadoGV = update_estadoGV(estadoGV, [{:num_vista}, {:copia, nodo_emisor}])
                                 send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
                                 {new_estadoGV,timeouts_primario, 0}
 
                             estadoGV.vista_t.copia == nodo_emisor ->
                               IO.puts("procesar_latido: estadoGV.vista_t.copia == nodo_emisor ")
-
                                 if n_vista_latido == 0 do
                                   IO.puts("procesar_latido: n_vista_latido == 0")
-
                                     #Caida rapida copia
                                     new_estadoGV = caida_copia(estadoGV)
                                     send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
                                     {new_estadoGV,timeouts_primario, 0}
                                 else
                                   IO.puts("procesar_latido: n_vista_latido != 0")
-
                                     #latido de copia
                                     send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
                                     {estadoGV,timeouts_primario, 0}
                                 end
                             true ->
                               IO.puts("procesar_latido: true -> ")
-
                                 #Añadir nodo en espera
                                 send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
-                                if Enum.find_value(estadoGV.nodos_espera, fn x -> x == nodo_emisor end) do
-                                  {estadoGV,timeouts_primario, timeouts_copia}
-                                else
-                                  new_estadoGV = Map.update!(estadoGV, :nodos_espera, &(&1 ++ [nodo_emisor]))
-                                  {new_estadoGV,timeouts_primario, timeouts_copia}
-                                end
+                                new_estadoGV = update_estadoGV(estadoGV, [{:nodos_espera, nodo_emisor}])
+                                {new_estadoGV,timeouts_primario, timeouts_copia}
+
                       end
               else #nodo_emisor = primario
               IO.puts("procesar_latido:  nodo_emisor == :primario")
-
                     cond do
-
                             n_vista_latido == -1 ->
                               IO.puts("procesar_latido: n_vista_latido == -1")
-
                                 send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
                                 {estadoGV,0, timeouts_copia}
 
                             n_vista_latido == 0 and estadoGV.vista_t.copia != :undefined ->
                               IO.puts("n_vista_latido == 0 and estadoGV.vista_t.copia != :undefined")
-
                                 #Caida rapida primario
                                 new_estadoGV = caida_primario(estadoGV)
                                 send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
@@ -182,7 +163,6 @@ defmodule ServidorGV do
 
                             n_vista_latido == 0 and estadoGV.vista_t.copia == :undefined ->
                               IO.puts("n_vista_latido == 0 and estadoGV.vista_t.copia == :undefined ")
-
                                 new_estadoGV = caida_primario_sin_copia(estadoGV)
                                 |> Map.put(:estado, :wait_primario)
                                 send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
@@ -190,11 +170,9 @@ defmodule ServidorGV do
 
                            true ->
                              IO.puts("true")
-
                                 #valido vista y voy a VALIDADO
-                                new_estadoGV = Map.put(estadoGV, :vista_v, estadoGV.vista_t)
-                                |> Map.put(:valida, true)
-                                |> Map.put(:estado, :validado)
+                                new_estadoGV = update_estadoGV(estadoGV, [{:valida, true}, {:estado, :validado}])
+                                |> Map.put(:vista_v, estadoGV.vista_t)
                                 send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
                                 {new_estadoGV,0, timeouts_copia}
                     end
@@ -205,37 +183,29 @@ defmodule ServidorGV do
                 {new_estadoGV,timeouts_primario, timeouts_copia} = cond do
                     nodo_emisor == estadoGV.vista_t.primario ->
                       IO.puts("procesar_latido: nodo_emisor == estadoGV.vista_t.primario ")
-
                           if n_vista_latido != 0 do
                             IO.puts("procesar_latido: n_vista_latido != 0")
-
                               send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
                               {estadoGV,0, timeouts_copia}
 
                           else
                             IO.puts("procesar_latido: n_vista_latido == 0")
-
-                              new_estadoGV = caida_primario(estadoGV)
-                              |> Map.put(:valida, false)
-                              |> Map.put(:estado, :caida)
+                              new_estadoGV = update_estadoGV(estadoGV, [{:valida, false}, {:estado, :caida}])
+                              |> caida_primario()
                               send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
                               {new_estadoGV,timeouts_copia, 0}
                           end
                     nodo_emisor == estadoGV.vista_t.copia ->
                       IO.puts("procesar_latido: nodo_emisor == estadoGV.vista_t.copia ")
-
                           if n_vista_latido != 0 do
                             IO.puts("procesar_latido: n_vista_latido != 0")
-
                               send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
                               {estadoGV,timeouts_primario, 0}
 
                           else
                             IO.puts("procesar_latido: n_vista_latido == 0")
-
-                              new_estadoGV = caida_copia(estadoGV)
-                              |> Map.put(estadoGV, :valida, false)
-                              |> Map.put(estadoGV, :estado, :caida)
+                              new_estadoGV = update_estadoGV(estadoGV, [{:valida, false}, {:estado, :caida}])
+                              |> caida_copia()
                               send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
                               {new_estadoGV,timeouts_copia, 0}
                           end
@@ -244,12 +214,8 @@ defmodule ServidorGV do
 
                       #Añadir nodo en espera
                       send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
-                      if Enum.find_value(estadoGV.nodos_espera, fn x -> x == nodo_emisor end) do
-                        {estadoGV,timeouts_primario, timeouts_copia}
-                      else
-                        new_estadoGV = Map.update!(estadoGV, :nodos_espera, &(&1 ++ [nodo_emisor]))
-                        {new_estadoGV,timeouts_primario, timeouts_copia}
-                      end
+                      new_estadoGV = update_estadoGV(estadoGV, [{:nodos_espera, nodo_emisor}])
+                      {new_estadoGV,timeouts_primario, timeouts_copia}
               end
               :caida ->
                 IO.puts("procesar_latido: :caida")
@@ -260,42 +226,32 @@ defmodule ServidorGV do
                             {new_estadoGV,timeouts_primario, timeouts_copia} = cond do
                                   estadoGV.vista_t.copia == :undefined ->
                                     IO.puts("procesar_latido: estadoGV.vista_t.copia == :undefined")
-
                                       #nodo_espera pasa a copia
-                                      new_vista_t = Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
-                                      |> Map.put(:copia, nodo_emisor)
-                                      new_estadoGV = Map.put(estadoGV, :vista_t, new_vista_t)
+                                      new_estadoGV = update_estadoGV(estadoGV, [{:num_vista}, {:copia, nodo_emisor}])                   #OK
                                       send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
                                       {new_estadoGV,timeouts_primario, 0}
 
                                   estadoGV.vista_t.copia == nodo_emisor ->
                                     IO.puts("procesar_latido: estadoGV.vista_t.copia == nodo_emisor")
-
                                       if n_vista_latido == 0 do
                                         IO.puts("procesar_latido: n_vista_latido == 0")
-
                                           #Caida rapida copia
                                           new_estadoGV = caida_copia(estadoGV)
                                           send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
                                           {new_estadoGV,timeouts_primario, 0}
+
                                       else
                                         IO.puts("procesar_latido: n_vista_latido != 0")
-
                                           #latido de copia
                                           send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
                                           {estadoGV,timeouts_primario, 0}
                                       end
                                   true ->
                                     IO.puts("procesar_latido: true")
-
                                       #Añadir nodo en espera
                                       send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
-                                      if Enum.find_value(estadoGV.nodos_espera, fn x -> x == nodo_emisor end) do
-                                        {estadoGV,timeouts_primario, timeouts_copia}
-                                      else
-                                        new_estadoGV = Map.update!(estadoGV, :nodos_espera, &(&1 ++ [nodo_emisor]))
-                                        {new_estadoGV,timeouts_primario, timeouts_copia}
-                                      end
+                                      new_estadoGV = update_estadoGV(estadoGV, [{:nodos_espera, nodo_emisor}])
+                                      {new_estadoGV,timeouts_primario, timeouts_copia}
                             end
                     else #nodo_emisor = primario
                     IO.puts("procesar_latido: nodo_emisor = primario")
@@ -303,7 +259,6 @@ defmodule ServidorGV do
                           cond do
                                   n_vista_latido == 0  ->
                                     IO.puts("procesar_latido:  n_vista_latido == 0")
-
                                       new_vista_t = Map.put(estadoGV.vista_t, :primario, :undefined)
                                       |> Map.put(:copia, :undefined)
                                       |> Map.put(:num_vista, 0)
@@ -314,7 +269,6 @@ defmodule ServidorGV do
 
                                   n_vista_latido != estadoGV.vista_t.num_vista->
                                     IO.puts("procesar_latido: n_vista_latido != estadoGV.vista_t.num_vista")
-
                                       send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
                                       {estadoGV,0, timeouts_copia}
 
@@ -322,12 +276,10 @@ defmodule ServidorGV do
 
                                  true ->
                                    IO.puts("procesar_latido: true")
-
                                       #valido vista y voy a VALIDADO
-                                      new_estadoGV = Map.put(estadoGV, :vista_v, estadoGV.vista_t)
-                                      |> Map.put(:valida, true)
-                                      |> Map.put(:estado, :validado)
-                                      send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})
+                                      new_estadoGV = update_estadoGV(estadoGV, [{:valida, true}, {:estado, :validado}])
+                                      |> Map.put(:vista_v, estadoGV.vista_t)
+                                      send({:cliente_gv, nodo_emisor}, {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida})           #OK
                                       {new_estadoGV,0, timeouts_copia}
                           end
                     end
@@ -355,61 +307,49 @@ defmodule ServidorGV do
                     new_estadoGV = caida_primario_sin_copia(estadoGV)
                     |> Map.put(:estado, :wait_primario)
                     IO.puts("procesar_situacion_servidores: timeouts_primario >= latidos_fallidos() and estadoGV.vista_t.primario != :undefined and estadoGV.vista_t.copia == :undefined ")
-
                     {new_estadoGV,0, 0}
 
                 timeouts_copia >= latidos_fallidos() and estadoGV.vista_t.copia != :undefined->
                   IO.puts("procesar_situacion_servidores:   timeouts_copia >= latidos_fallidos() and estadoGV.vista_t.copia != :undefined")
-
                     {caida_copia(estadoGV),timeouts_primario, 0}
 
                 true ->
                   IO.puts("procesar_situacion_servidores: true")
-
                     {estadoGV,timeouts_primario, timeouts_copia }
             end
         :validado ->
           IO.puts("procesar_situacion_servidores: :validado")
-
           {new_estadoGV,timeouts_primario, timeouts_copia } = cond do
                 timeouts_primario >= latidos_fallidos() ->
-                  IO.puts("procesar_situacion_servidores: timeouts_primario >= latidos_fallidos() ")
-
-                    new_estadoGV = caida_primario(estadoGV)
-                    |> Map.put(:valida, false)
-                    |> Map.put(:estado, :caida)
-                    {new_estadoGV,timeouts_copia, 0}
+                   IO.puts("procesar_situacion_servidores: timeouts_primario >= latidos_fallidos() ")
+                   new_estadoGV = update_estadoGV(estadoGV, [{:valida, false}, {:estado, :caida}])
+                   |> caida_primario()
+                   {new_estadoGV,timeouts_copia, 0}
 
                 timeouts_copia >= latidos_fallidos() ->
                   IO.puts("procesar_situacion_servidores:   timeouts_copia >= latidos_fallidos() ")
-
-                    new_estadoGV = caida_copia(estadoGV)
-                    |> Map.put(:valida, false)
-                    |> Map.put(:estado, :caida)
+                     new_estadoGV = update_estadoGV(estadoGV, [{:valida, false}, {:estado, :caida}])
+                     |> caida_copia()
                     {new_estadoGV,timeouts_copia, 0}
                 true ->
                   IO.puts("procesar_situacion_servidores: true")
-
                     {estadoGV,timeouts_primario, timeouts_copia }
           end
         :caida ->
           IO.puts("procesar_situacion_servidores: :caida")
-
               {new_estadoGV,timeouts_primario, timeouts_copia } = cond do
                   timeouts_primario >= latidos_fallidos()  ->
                     IO.puts("procesar_situacion_servidores: timeouts_primario >= latidos_fallidos()")
-
                     new_estadoGV = caida_primario_sin_copia(estadoGV)
                     |> Map.put(:estado, :error)
                     {new_estadoGV,0, 0}
 
                   timeouts_copia >= latidos_fallidos() and estadoGV.vista_t.copia != :undefined->
                     IO.puts("procesar_situacion_servidores: timeouts_copia >= latidos_fallidos() and estadoGV.vista_t.copia != :undefined")
-
                       {caida_copia(estadoGV),timeouts_primario, 0}
+
                   true ->
                     IO.puts("procesar_situacion_servidores: true")
-
                     {estadoGV,timeouts_primario, timeouts_copia }
               end
         :error ->
@@ -421,24 +361,18 @@ defmodule ServidorGV do
 
     def caida_copia(estadoGV) do
       if estadoGV.nodos_espera == [] do
-         new_vista_t = Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
-         |> Map.put(:copia, :undefined)
-         Map.put(estadoGV, :vista_t, new_vista_t)
-      else
+        update_estadoGV(estadoGV, [{:num_vista}, {:copia, :undefined}])
 
-         new_vista_t = Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
-         |> Map.put(:copia, hd(estadoGV.nodos_espera))
-         Map.put(estadoGV, :vista_t, new_vista_t)
-         |> Map.put(:nodos_espera, tl(estadoGV.nodos_espera))
+      else
+         update_estadoGV(estadoGV, [{:num_vista}, {:copia, hd(estadoGV.nodos_espera)},
+         {:nodos_espera, tl(estadoGV.nodos_espera)}])
       end
     end
 
     def caida_primario(estadoGV) do
       if estadoGV.nodos_espera == [] do
-         new_vista_t = Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
-         |> Map.put(:primario, estadoGV.vista_t.copia)
-         |> Map.put(:copia, :undefined)
-         Map.put(estadoGV, :vista_t, new_vista_t)
+         update_estadoGV(estadoGV, [{:num_vista}, {:primario, estadoGV.vista_t.copia },
+         {:copia, :undefined}])
 
       else
          new_vista_t = Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
@@ -454,29 +388,44 @@ defmodule ServidorGV do
       |> Map.put(:primario, :undefined)
       Map.put(estadoGV, :vista_t, new_vista_t)
     end
-    # def update_vista_t(estadoGV, campo, valor) do
-    #   new_vista_t = if campo == :num_vista do
-    #       Map.update!(estadoGV.vista_t, campo, &(&1 + 1))
-    #   else
-    #       #update primario o copia
-    #       Map.put(estadoGV.vista_t, campo, valor)
-    #   end
-    #   new_estadoGV = Map.put(estadoGV, :vista_t, new_vista_t)
-    # end
-    #
-    # def update_estado(estadoGV, estado) do
-    #   Map.put(estadoGV, :estado, estado)
-    # end
-    #
-    # def update_nodos_espera(estadoGV, nodo) do
-    #   Map.update!(estadoGV, :nodos_espera, &(&1 ++ [5]))
-    # end
-    #
-    # def validar_vista(estadoGV) do
-    #   estadoGV = Map.put(estadoGV, :valida, true)
-    #   estadoGV.vista_v = estadoGV.vista_t
-    # end
 
+    def update_estadoGV(estadoGV, []) do
+      IO.puts("FINAL UPDATE")
+      IO.inspect estadoGV
+      estadoGV
+    end
 
+    def update_estadoGV(estadoGV, new) do
+      IO.puts("update: INIT")
+      IO.inspect estadoGV
+      IO.inspect new
+      new_estadoGV = case elem(hd(new), 0) do
+        :num_vista ->
+            Map.put(estadoGV, :vista_t, Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1)))
+
+        :primario ->
+            Map.put(estadoGV, :vista_t, Map.put(estadoGV.vista_t, :primario, elem(hd(new), 1)))
+
+        :copia ->
+            Map.put(estadoGV, :vista_t, Map.put(estadoGV.vista_t, :copia, elem(hd(new), 1)))
+
+        :nodos_espera ->
+            if elem(hd(new), 1) == [] or
+            Enum.find_value(estadoGV.nodos_espera, fn x -> x == elem(hd(new), 1) end) do
+              estadoGV
+            else
+              Map.update!(estadoGV, :nodos_espera, &(&1 ++ [elem(hd(new), 1)]))
+            end
+
+        :valida ->
+            Map.put(estadoGV, :valida, elem(hd(new), 1))
+
+        :estado ->
+            Map.put(estadoGV, :estado, elem(hd(new), 1))
+
+      end
+      IO.inspect tl(new)
+      update_estadoGV(new_estadoGV, tl(new))
+    end
 
 end
