@@ -114,8 +114,6 @@ defmodule GestorVistasTest do
     ClienteGV.latido(c3, 0)
     # vista tentativa
     {vista, _} = ClienteGV.latido(c1, 4)
-    IO.puts("AQUIIII")
-    IO.inspect vista
 
     espera_pasa_a_copia(c1, c3, 4, ServidorGV.latidos_fallidos() * 2)
 
@@ -202,14 +200,12 @@ defmodule GestorVistasTest do
 
     # Tiempo de puesta en marcha de nodos
     t_total = :os.system_time(:milli_seconds) - tiempo_antes
-    IO.puts("Tiempo puesta en marcha de nodos  : #{t_total}")
 
     [sv: sv, c1: c1, c2: c2, c3: c3]
   end
 
   ##
   defp stopServidores(servidores, maquinas) do
-    IO.puts("Finalmente eliminamos nodos")
     Enum.each(servidores, fn {_, nodo} -> NodoRemoto.stop(nodo) end)
 
     # Eliminar epmd en cada maquina con nodos Elixir
@@ -220,12 +216,10 @@ defmodule GestorVistasTest do
   defp primer_primario(_c, 0), do: :fin
 
   defp primer_primario(c, x) do
-    IO.puts("primer_primario: INIT")
 
     {vista, _} = ClienteGV.latido(c, 0)
 
     if vista.primario != c do
-      IO.puts("primer_primario: vista.primario != c")
 
       Process.sleep(ServidorGV.intervalo_latidos())
       primer_primario(c, x - 1)
@@ -236,14 +230,12 @@ defmodule GestorVistasTest do
   defp primer_nodo_copia(_c1, _c2, 0), do: :fin
 
   defp primer_nodo_copia(c1, c2, x) do
-    IO.puts("primer_nodo_copia: INIT")
 
     # el primario : != 0 para no dar por nuevo y < 0 PARA NO VALIDAR !!!
     ClienteGV.latido(c1, -1)
     {vista, _} = ClienteGV.latido(c2, 0)
 
     if vista.copia != c2 do
-      IO.puts("primer_nodo_copia: vista.copia != c2")
 
       Process.sleep(ServidorGV.intervalo_latidos())
       primer_nodo_copia(c1, c2, x - 1)
@@ -254,12 +246,10 @@ defmodule GestorVistasTest do
   def copia_releva_primario(_, _num_vista_inicial, 0), do: :fin
 
   def copia_releva_primario(c2, num_vista_inicial, x) do
-    IO.puts("copia_releva_primario: INIT")
 
     {vista, _} = ClienteGV.latido(c2, num_vista_inicial)
 
     if vista.primario != c2 or vista.copia != :undefined do
-      IO.puts("copia_releva_primario: vista.primario != c2 or vista.copia != :undefined ")
 
       Process.sleep(ServidorGV.intervalo_latidos())
       copia_releva_primario(c2, num_vista_inicial, x - 1)
@@ -270,13 +260,11 @@ defmodule GestorVistasTest do
   defp servidor_rearranca_a_copia(_c1, _c2, _num_vista_tentativa, 0), do: :fin
 
   defp servidor_rearranca_a_copia(c1, c2, num_vista_tentativa, x) do
-    IO.puts("servidor_rearranca_a_copia: INIT")
 
     ClienteGV.latido(c1, 0)
     {vista, _} = ClienteGV.latido(c2, num_vista_tentativa)
 
     if vista.copia != c1 do
-      IO.puts("servidor_rearranca_a_copia: vista.copia != c1 ")
       Process.sleep(ServidorGV.intervalo_latidos())
       servidor_rearranca_a_copia(c1, c2, num_vista_tentativa, x - 1)
     end
@@ -286,13 +274,11 @@ defmodule GestorVistasTest do
   defp espera_pasa_a_copia(_c1, _c3, _num_vista_tentativa, 0), do: :fin
 
   defp espera_pasa_a_copia(c1, c3, num_vista_tentativa, x) do
-    IO.puts("espera_pasa_a_copia: INIT")
 
     ClienteGV.latido(c3, num_vista_tentativa)
     {vista, _} = ClienteGV.latido(c1, num_vista_tentativa)
 
     if vista.primario != c1 or vista.copia != c3 do
-      IO.puts("espera_pasa_a_copia: vista.primario != c1 or vista.copia != c3")
 
       Process.sleep(ServidorGV.intervalo_latidos())
       espera_pasa_a_copia(c1, c3, num_vista_tentativa, x - 1)
@@ -303,13 +289,11 @@ defmodule GestorVistasTest do
   defp primario_rearrancado(_c1, _c3, _num_vista_tentativa, 0), do: :fin
 
   defp primario_rearrancado(c1, c3, num_vista_tentativa, x) do
-    IO.puts("primario_rearrancado: INIT")
 
     ClienteGV.latido(c1, num_vista_tentativa)
     {vista, _} = ClienteGV.latido(c3, num_vista_tentativa)
 
     if vista.primario != c3 do
-      IO.puts("primario_rearrancado: vista.primario != c3")
       Process.sleep(ServidorGV.intervalo_latidos())
       primario_rearrancado(c1, c3, num_vista_tentativa, x - 1)
     end
@@ -317,11 +301,8 @@ defmodule GestorVistasTest do
 
   defp primario_no_confirma_vista(c1, c2, c3) do
     {vista, _} = ClienteGV.latido(c1, 0)
-    IO.inspect vista
     {vista,_} = ClienteGV.latido(c1, vista.num_vista)
-    IO.inspect vista
     {vista,_} = ClienteGV.latido(c3, 0)
-    IO.inspect vista
     comprobar_tentativa(c2, :undefined, :undefined, 0)
   end
 
@@ -330,7 +311,6 @@ defmodule GestorVistasTest do
   end
 
   defp comprobar_tentativa(nodo_cliente, nodo_primario, nodo_copia, n_vista) do
-    IO.puts("comprobar_tentativa: INIT")
 
     # Solo interesa vista tentativa
     {vista, _} = ClienteGV.latido(nodo_cliente, -1)
@@ -339,7 +319,6 @@ defmodule GestorVistasTest do
   end
 
   defp comprobar_valida(nodo_cliente, nodo_primario, nodo_copia, n_vista) do
-    IO.puts("comprobar_valida: INIT")
 
     {vista, _} = ClienteGV.obten_vista(nodo_cliente)
 
@@ -349,8 +328,6 @@ defmodule GestorVistasTest do
   end
 
   defp comprobar(nodo_primario, nodo_copia, n_vista, vista) do
-    IO.puts("comprobar: INIT")
-    IO.inspect vista
     assert vista.primario == nodo_primario
 
     assert vista.copia == nodo_copia

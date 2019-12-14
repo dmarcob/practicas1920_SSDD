@@ -25,3 +25,14 @@ def primario_no_confirma_vista(c1, c2, c3) do
     # #c3 NO confirma vista (cae)
     # ClienteGV.latido(c3, 0)
 end
+
+
+
+
+update_estadoGV(estadoGV, [{:num_vista}, {:copia, :undefined}])
+
+
+
+
+#  update_estadoGV(estadoGV, [{:num_vista}, {:copia, hd(estadoGV.nodos_espera)},
+# {:nodos_espera, tl(estadoGV.nodos_espera)}])
