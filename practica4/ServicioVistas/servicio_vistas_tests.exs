@@ -173,8 +173,7 @@ defmodule GestorVistasTest do
     # Poner en marcha nodos servidor gestor de vistas y clientes
     # startNodos(%{tipoNodo: %{maquina: list(nombres)}})
     numMaquinas = length(maquinas)
-    #sv = ServidorGV.startNodo("sv", Enum.at(maquinas, 0))  #TODO:descomentar
-     sv = :"sv@127.0.0.1"
+     sv = ServidorGV.startNodo("sv", Enum.at(maquinas, 0))
     clientes =
       for i <- 1..3 do
         # solo una máquina : la máquina local
@@ -192,8 +191,7 @@ defmodule GestorVistasTest do
       end
 
     # Poner en marcha servicios de cada uno
-    # startServices(%{tipo: [nodos]})
-  #  ServidorGV.startService(sv)                  #TODO: descomentar
+     ServidorGV.startService(sv)
     c1 = ClienteGV.startService(Enum.at(clientes, 0), sv)
     c2 = ClienteGV.startService(Enum.at(clientes, 1), sv)
     c3 = ClienteGV.startService(Enum.at(clientes, 2), sv)
