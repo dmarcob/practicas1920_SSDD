@@ -1,4 +1,4 @@
-# Para utilizar IEx.pry
+:servidor_sa# Para utilizar IEx.pry
 # AUTORES: José Manuel Vidarte Llera, Diego Marco Beisty
 # NIAs: 739729, 755232
 # FICHERO: escenario3.ex
@@ -113,7 +113,7 @@ defmodule ServidorGV do
           ])
 
         send(
-          {:cliente_gv, nodo_emisor},
+          {:servidor_sa, nodo_emisor},
           {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
         )
 
@@ -135,7 +135,7 @@ defmodule ServidorGV do
             n_vista_latido == -1 ->
               #primario no confirma vista
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, estadoGV.vista_t, estadoGV.valida}
               )
 
@@ -146,7 +146,7 @@ defmodule ServidorGV do
               new_estadoGV = caida_primario(estadoGV)
 
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
               )
 
@@ -159,7 +159,7 @@ defmodule ServidorGV do
                 |> Map.put(:estado, :wait_primario)
 
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
               )
 
@@ -172,7 +172,7 @@ defmodule ServidorGV do
                 |> Map.put(:vista_v, estadoGV.vista_t)
 
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
               )
 
@@ -188,7 +188,7 @@ defmodule ServidorGV do
               if n_vista_latido != 0 do
                 #Primario sigue vivo
                 send(
-                  {:cliente_gv, nodo_emisor},
+                  {:servidor_sa, nodo_emisor},
                   {:vista_tentativa, estadoGV.vista_t, estadoGV.valida}
                 )
 
@@ -200,7 +200,7 @@ defmodule ServidorGV do
                   |> caida_primario()
 
                 send(
-                  {:cliente_gv, nodo_emisor},
+                  {:servidor_sa, nodo_emisor},
                   {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
                 )
 
@@ -212,7 +212,7 @@ defmodule ServidorGV do
               if n_vista_latido != 0 do
                 #Copia sigue viva
                 send(
-                  {:cliente_gv, nodo_emisor},
+                  {:servidor_sa, nodo_emisor},
                   {:vista_tentativa, estadoGV.vista_t, estadoGV.valida}
                 )
 
@@ -224,7 +224,7 @@ defmodule ServidorGV do
                   |> caida_copia()
 
                 send(
-                  {:cliente_gv, nodo_emisor},
+                  {:servidor_sa, nodo_emisor},
                   {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
                 )
 
@@ -234,7 +234,7 @@ defmodule ServidorGV do
             true ->
               # Latido de nodo distinto al primario y a la copia
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, estadoGV.vista_t, estadoGV.valida}
               )
 
@@ -267,7 +267,7 @@ defmodule ServidorGV do
                 |> Map.put(:estado, :error)
 
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
               )
 
@@ -276,7 +276,7 @@ defmodule ServidorGV do
             n_vista_latido != estadoGV.vista_t.num_vista ->
               #Primario no confirma vista
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, estadoGV.vista_t, estadoGV.valida}
               )
 
@@ -289,7 +289,7 @@ defmodule ServidorGV do
                 |> Map.put(:vista_v, estadoGV.vista_t)
 
               send(
-                {:cliente_gv, nodo_emisor},
+                {:servidor_sa, nodo_emisor},
                 {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
               )
 
@@ -298,7 +298,7 @@ defmodule ServidorGV do
         end
 
       :error ->
-        send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
+        send({:servidor_sa, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
         {estadoGV, timeouts_primario, timeouts_copia}
     end
   end
@@ -388,7 +388,7 @@ defmodule ServidorGV do
           new_estadoGV = update_estadoGV(estadoGV, [{:num_vista}, {:copia, nodo_emisor}])
 
           send(
-            {:cliente_gv, nodo_emisor},
+            {:servidor_sa, nodo_emisor},
             {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
           )
 
@@ -400,7 +400,7 @@ defmodule ServidorGV do
             new_estadoGV = caida_copia(estadoGV)
 
             send(
-              {:cliente_gv, nodo_emisor},
+              {:servidor_sa, nodo_emisor},
               {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
             )
 
@@ -408,7 +408,7 @@ defmodule ServidorGV do
           else
             # latido de copia
             send(
-              {:cliente_gv, nodo_emisor},
+              {:servidor_sa, nodo_emisor},
               {:vista_tentativa, estadoGV.vista_t, estadoGV.valida}
             )
 
@@ -417,7 +417,7 @@ defmodule ServidorGV do
 
         true ->
           # Añadir nodo en espera
-          send({:cliente_gv, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
+          send({:servidor_sa, nodo_emisor}, {:vista_tentativa, estadoGV.vista_t, estadoGV.valida})
           new_estadoGV = update_estadoGV(estadoGV, [{:nodos_espera, nodo_emisor}])
           {new_estadoGV, timeouts_primario, timeouts_copia}
       end
