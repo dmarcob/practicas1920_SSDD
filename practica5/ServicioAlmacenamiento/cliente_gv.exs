@@ -10,10 +10,12 @@ defmodule ClienteGV do
     """
     @spec latido(node, integer) :: ServidorGV.t_vista
     def latido(nodo_servidor_gv, num_vista) do
+        IO.puts("dentro de latido")
         send({:servidor_gv, nodo_servidor_gv}, {:latido, num_vista, Node.self()})
 
         receive do   # esperar respuesta del ping
             {:vista_tentativa, vista, encontrado?} ->  {vista, encontrado?}
+
             _otro -> exit(" ERROR: en funcion #latido# de modulo ClienteGV")
 
         after @tiempo_espera_de_respuesta ->

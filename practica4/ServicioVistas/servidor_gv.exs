@@ -70,7 +70,10 @@ defmodule ServidorGV do
 
   # Estas 2 primeras deben ser defs para llamadas tipo (MODULE, funcion,[])
   def init_sv() do
+    IO.puts("INIT GESTOR DE VISTAS")
+
     Process.register(self(), :servidor_gv)
+    IO.puts("INIT GESTOR DE VISTAS")
     # otro proceso concurrente
     spawn(__MODULE__, :init_monitor, [self()])
     estadoGV = %ServidorGV{}
@@ -87,14 +90,22 @@ defmodule ServidorGV do
     {new_estadoGV, timeouts_primario, timeouts_copia} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
+          IO.puts("latido: ")
+          IO.inspect nodo_emisor
+          IO.inspect estadoGV
           procesar_latido(estadoGV, timeouts_primario, timeouts_copia,
           n_vista_latido, nodo_emisor)
 
         {:obten_vista_valida, pid} ->
+          IO.puts("obten_vista_valida")
+          IO.inspect pid
+          IO.inspect estadoGV
           send(pid, {:vista_valida, estadoGV.vista_v, estadoGV.valida})
           {estadoGV, timeouts_primario, timeouts_copia}
 
         :procesa_situacion_servidores ->
+          IO.puts("procesa_situacion_servidores")
+          IO.inspect estadoGV
           procesar_situacion_servidores(estadoGV, timeouts_primario + 1, timeouts_copia + 1)
       end
 

@@ -1,0 +1,23 @@
+
+
+servidor vistas
+
+iex --name sv@127.0.0.1 --cookie palabrasecreta
+ServidorGV.init_sv()
+
+
+servidor 1 de almacenamiento
+iex --name sa1@127.0.0.1 --cookie palabrasecreta
+ServidorSA.init_sa(:"sv@127.0.0.1")
+
+
+
+servidor 2 de almacenamiento
+iex --name sa2@127.0.0.1 --cookie palabrasecreta
+ServidorSA.init_sa(:"sv@127.0.0.1")
+
+
+
+servidor 3 de almacenamiento
+iex --name sa3@127.0.0.1 --cookie palabrasecreta
+ServidorSA.init_sa(:"sv@127.0.0.1")

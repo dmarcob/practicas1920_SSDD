@@ -26,27 +26,27 @@ defmodule  ServicioAlmacenamientoTest do
 
 
     #@tag :deshabilitado
-    test "Test 1: solo_arranque y parada" do
-        IO.puts("Test: Solo arranque y parada ...")
-
-
-        # Poner en marcha nodos, clientes, servidores alm., en @maquinas
-        mapNodos = startServidores(["ca1"], ["sa1"], @maquinas)
-
-        Process.sleep(500)
-
-        # Parar todos los nodos y epmds
-        stopServidores(mapNodos, @maquinas)
-
-        IO.puts(" ... Superado")
-    end
+    # test "Test 1: solo_arranque y parada" do
+    #     IO.puts("Test: Solo arranque y parada ...")
+    #
+    #
+    #     # Poner en marcha nodos, clientes, servidores alm., en @maquinas
+    #     mapNodos = startServidores(["ca1"], ["sa1"], @maquinas)
+    #
+    #     Process.sleep(500)
+    #
+    #     # Parar todos los nodos y epmds
+    #     stopServidores(mapNodos, @maquinas)
+    #
+    #     IO.puts(" ... Superado")
+    # end
 
     #@tag :deshabilitado
     test "Test 2: Algunas escrituras" do
         #:io.format "Pids de nodo MAESTRO ~p: principal = ~p~n", [node, self]
 
         #Process.flag(:trap_exit, true)
-
+    
         # Para que funcione bien la función  ClienteGV.obten_vista
         Process.register(self(), :servidor_sa)
 
@@ -173,26 +173,28 @@ defmodule  ServicioAlmacenamientoTest do
         tiempo_antes = :os.system_time(:milli_seconds)
 
         # Poner en marcha gestor de vistas y clientes almacenamiento
-        sv = ServidorGV.startNodo("sv", "127.0.0.1")
+        #sv = ServidorGV.startNodo("sv", "127.0.0.1")                         TODO: descomentar
+        sv = :"sv@127.0.0.1"
             # Mapa con nodos cliente de almacenamiento
         clientesAlm = for c <- clientes, into: %{} do
                             {String.to_atom(c),
                             ClienteSA.startNodo(c, "127.0.0.1")}
                         end
-        ServidorGV.startService(sv)
+        #ServidorGV.startService(sv)                                        TODO: descomentar
         for { _, n} <- clientesAlm, do: ClienteSA.startService(n, sv)
 
         # Mapa con nodos servidores almacenamiento
         servAlm = for {s, m} <-  Enum.zip(serv_alm, maquinas), into: %{} do
                       {String.to_atom(s),
-                       ServidorSA.startNodo(s, m)}
+                       #ServidorSA.startNodo(s, m)}                            TODO: descomentar
+                       String.to_atom(s <> "@" <> m)}
                   end
-
+        IO.inspect servAlm
         # Poner en marcha servicios de cada nodo servidor de almacenamiento
-        for { _, n} <- servAlm do
-            ServidorSA.startService(n, sv)
-            #Process.sleep(60)
-        end
+        # for { _, n} <- servAlm do                                           TODO: descomentar
+        #     ServidorSA.startService(n, sv)
+        #     #Process.sleep(60)
+        # end
 
         #Tiempo de puesta en marcha de nodos
         t_total = :os.system_time(:milli_seconds) - tiempo_antes

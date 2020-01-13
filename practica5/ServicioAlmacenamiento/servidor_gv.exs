@@ -70,6 +70,7 @@ defmodule ServidorGV do
 
   # Estas 2 primeras deben ser defs para llamadas tipo (MODULE, funcion,[])
   def init_sv() do
+    IO.puts("INIT GESTOR_VISTAS")
     Process.register(self(), :servidor_gv)
     # otro proceso concurrente
     spawn(__MODULE__, :init_monitor, [self()])
@@ -87,6 +88,9 @@ defmodule ServidorGV do
     {new_estadoGV, timeouts_primario, timeouts_copia} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
+          IO.puts("bucle: latido")
+          IO.puts(nodo_emisor)
+          IO.inspect estadoGV
           procesar_latido(estadoGV, timeouts_primario, timeouts_copia,
           n_vista_latido, nodo_emisor)
 
@@ -111,7 +115,8 @@ defmodule ServidorGV do
             {:primario, nodo_emisor},
             {:estado, :wait_copia}
           ])
-
+        IO.puts("---------------procesar_latido:")
+        IO.inspect new_estadoGV
         send(
           {:servidor_sa, nodo_emisor},
           {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
