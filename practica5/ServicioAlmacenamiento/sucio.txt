@@ -21,3 +21,51 @@ ServidorSA.init_sa(:"sv@127.0.0.1")
 servidor 3 de almacenamiento
 iex --name sa3@127.0.0.1 --cookie palabrasecreta
 ServidorSA.init_sa(:"sv@127.0.0.1")
+
+
+servidor 4 de almacenamiento
+iex --name sa4@127.0.0.1 --cookie palabrasecreta
+ServidorSA.init_sa(:"sv@127.0.0.1")
+
+
+
+
+
+
+
+
+
+
+defp startServidores(clientes, serv_alm, maquinas) do
+    tiempo_antes = :os.system_time(:milli_seconds)
+
+    # Poner en marcha gestor de vistas y clientes almacenamiento
+    #sv = ServidorGV.startNodo("sv", "127.0.0.1")                         TODO: descomentar
+    sv = :"sv@127.0.0.1"
+        # Mapa con nodos cliente de almacenamiento
+    clientesAlm = for c <- clientes, into: %{} do
+                        {String.to_atom(c),
+                        ClienteSA.startNodo(c, "127.0.0.1")}
+                    end
+    #ServidorGV.startService(sv)                                        TODO: descomentar
+    for { _, n} <- clientesAlm, do: ClienteSA.startService(n, sv)
+
+    # Mapa con nodos servidores almacenamiento
+    servAlm = for {s, m} <-  Enum.zip(serv_alm, maquinas), into: %{} do
+                  {String.to_atom(s),
+                   #ServidorSA.startNodo(s, m)}                            TODO: descomentar
+                   String.to_atom(s <> "@" <> m)}
+              end
+    IO.inspect servAlm
+    # Poner en marcha servicios de cada nodo servidor de almacenamiento
+    # for { _, n} <- servAlm do                                           TODO: descomentar
+    #     ServidorSA.startService(n, sv)
+    #     #Process.sleep(60)
+    # end
+
+    #Tiempo de puesta en marcha de nodos
+    t_total = :os.system_time(:milli_seconds) - tiempo_antes
+    IO.puts("Tiempo puesta en marcha de nodos  : #{t_total}")
+
+    %{gv: sv} |> Map.merge(clientesAlm) |> Map.merge(servAlm)
+end

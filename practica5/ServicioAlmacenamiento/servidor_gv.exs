@@ -87,17 +87,19 @@ defmodule ServidorGV do
   defp bucle_recepcion(estadoGV, timeouts_primario, timeouts_copia) do
     {new_estadoGV, timeouts_primario, timeouts_copia} =
       receive do
-        {:latido, n_vista_latido, nodo_emisor} ->
-          IO.puts("bucle: latido")
-          IO.puts(nodo_emisor)
-          IO.inspect estadoGV
-          procesar_latido(estadoGV, timeouts_primario, timeouts_copia,
-          n_vista_latido, nodo_emisor)
-
         {:obten_vista_valida, pid} ->
+          IO.puts("PETICION VISTA VALIDA EN BUCLE")
           send(pid, {:vista_valida, estadoGV.vista_v, estadoGV.valida})
           {estadoGV, timeouts_primario, timeouts_copia}
 
+        {:latido, n_vista_latido, nodo_emisor} ->
+          IO.puts("bucle: latido")
+          IO.puts(nodo_emisor)
+          IO.inspect n_vista_latido
+          IO.inspect estadoGV
+          procesar_latido(estadoGV, timeouts_primario, timeouts_copia,
+          n_vista_latido, nodo_emisor)
+          
         :procesa_situacion_servidores ->
           procesar_situacion_servidores(estadoGV, timeouts_primario + 1, timeouts_copia + 1)
       end
@@ -358,8 +360,7 @@ defmodule ServidorGV do
             end
 
         :caida ->
-          {new_estadoGV, timeouts_primario, timeouts_copia} =
-            cond do
+          {new_estadoGV, timeouts_primario, timeouts_copia} = cond do
               timeouts_primario >= latidos_fallidos() ->
                 new_estadoGV =
                   caida_primario_sin_copia(estadoGV)
@@ -429,18 +430,22 @@ defmodule ServidorGV do
   end
 
   def caida_copia(estadoGV) do
+    IO.puts("CAIDA DE LA COPIA ->")
+
     if estadoGV.nodos_espera == [] do
       update_estadoGV(estadoGV, [{:num_vista}, {:copia, :undefined}])
     else
-      update_estadoGV(estadoGV, [
-        {:num_vista},
-        {:copia, hd(estadoGV.nodos_espera)},
-        {:nodos_espera, tl(estadoGV.nodos_espera)}
-      ])
+      new_vista_t =
+        Map.update!(estadoGV.vista_t, :num_vista, &(&1 + 1))
+        |> Map.put(:copia, hd(estadoGV.nodos_espera))
+
+      Map.put(estadoGV, :vista_t, new_vista_t)
+      |> Map.put(:nodos_espera, tl(estadoGV.nodos_espera))
     end
   end
 
   def caida_primario(estadoGV) do
+    IO.puts("CAIDA DEL PRIMARIO ->")
     if estadoGV.nodos_espera == [] do
       update_estadoGV(estadoGV, [
         {:num_vista},
@@ -459,6 +464,8 @@ defmodule ServidorGV do
   end
 
   def caida_primario_sin_copia(estadoGV) do
+    IO.puts("CAIDA DEL PRIMARIO SIN COPIA ->")
+
     new_vista_t =
       Map.put(estadoGV.vista_t, :num_vista, 0)
       |> Map.put(:primario, :undefined)

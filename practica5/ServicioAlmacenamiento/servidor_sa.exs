@@ -6,11 +6,16 @@ defmodule ServidorSA do
     defstruct  base_datos: %{},
                estado: :init,
                vista: %{:num_vista => 0, :primario => :undefined, :copia => :undefined},
-               valida: 0
-
+               valida: false
+    @tiempo_espera_de_respuesta 50
+    @tiempo_espera_a_copia 30
     @intervalo_latido 50
 
-
+# ERRROR RARO ROJO Y COMPROBAR LECTURAS EN CLIENTE GV
+#
+#
+#
+#
     @doc """
         Obtener el hash de un string Elixir
             - Necesario pasar, previamente,  a formato string Erlang
@@ -65,14 +70,23 @@ defmodule ServidorSA do
                   {:late} ->
                         IO.puts("recibido late")
                         new_estadoSA = procesa_late(nodo_servidor_gv, estadoSA)
-                        new_estadoSA = comprobar_si_soy_copia(nodo_servidor_gv, new_estadoSA)
-                        new_estadoSA
+                        # IO.puts("BUCLE despues de procesa_late")
+                        # IO.inspect new_estadoSA
+                            new_estadoSA = comprobar_si_soy_copia(nodo_servidor_gv, new_estadoSA)
+                        
+                        # IO.puts("BUCLE despues de comprobar_si_soy_copia")
+                        # IO.inspect new_estadoSA
+
 
                   #Solicitud para transferir la base de datos al nodo copia
                   {:transf_total, pid_copia} ->
                           IO.puts("bucle: transf_total, primario recibe orden de transferir todo a la copia")
-                          if estadoSA.vista.primario == node() do
-                            new_estadoSA = procesa_transf_total(nodo_servidor_gv, estadoSA, pid_copia)
+                          {vista, valida} = ClienteGV.latido(nodo_servidor_gv, estadoSA.vista.num_vista)
+
+                          new_estadoSA = Map.put(estadoSA, :vista, vista)
+                          if new_estadoSA.vista.primario == Node.self() do
+                            new_estadoSA = procesa_transf_total(nodo_servidor_gv, new_estadoSA, pid_copia)
+
                           else
                             IO.puts("ERROR: bucle: transf_total: No soy primario")
                             estadoSA
@@ -85,17 +99,30 @@ defmodule ServidorSA do
                             IO.puts("bucle: transf_parcial, copia recibe orden de escritura del primario")
                             new_estadoSA = procesa_transf_parcial(estadoSA, :escribe_generico, param)
                             send({:servidor_sa, id_primario}, {:ok_solicitud})
+                            IO.puts("BUCLE COPIA")
+                            IO.inspect new_estadoSA
                             new_estadoSA
                           else
                             IO.puts("ERROR: bucle: transf_parcial")
                             estadoSA
                           end
 
+
                   {op, param, nodo_origen}  ->
-                          new_estado = procesa_operacion(estadoSA, op, param, nodo_origen)
+                          IO.puts("BUCLE ANTES DE PROCESAR OPERACION")
+                          IO.inspect estadoSA
+                          IO.puts("recibido de ")
+                          IO.inspect nodo_origen
+                          IO.inspect op
+                          IO.inspect param
+                          new_estadoSA = procesa_operacion(estadoSA, op, param, nodo_origen)
+                          IO.puts("BUCLE DESPUES DE PROCESAR OPERACION")
+                          IO.inspect new_estadoSA
+
+                          new_estadoSA
                end
 
-        bucle_recepcion_principal(estadoSA, nodo_servidor_gv)
+        bucle_recepcion_principal(new_estadoSA, nodo_servidor_gv)
     end
 
     #--------- Otras funciones privadas que necesiteis .......
@@ -112,15 +139,15 @@ defmodule ServidorSA do
     #Procesa una operacion de lectura si el nodo es la copia
     #Devuelve el estadoSA actualizado
     def procesa_operacion(estadoSA, op, param, nodo_origen) do
-      IO.puts("INIT procesa_operacion")
-      IO.puts("------------------------------")
-      IO.puts("estadoSA->")
-      IO.inspect estadoSA
-      IO.puts("parametros->")
-      IO.inspect op
-      IO.inspect param
-      IO.inspect nodo_origen
-      IO.puts("------------------------------")
+      # IO.puts("INIT procesa_operacion")
+      # IO.puts("------------------------------")
+      # IO.puts("estadoSA->")
+      # IO.inspect estadoSA
+      # IO.puts("parametros->")
+      # IO.inspect op
+      # IO.inspect param
+      # IO.inspect nodo_origen
+      # IO.puts("------------------------------")
         new_estado = cond do
           estadoSA.vista.primario == Node.self() ->
                   IO.puts("procesa_operacion: soy primario")
@@ -133,9 +160,14 @@ defmodule ServidorSA do
                   IO.puts("procesa_operacion: soy copia")
                   procesa_operacion_copia(estadoSA, op, param, nodo_origen)
                   estadoSA
+          true -> send({:cliente_sa, nodo_origen}, {:resultado, :soy_nodo_en_espera})
+                  estadoSA
+
+
+
         end
-      IO.puts("FIN procesa_operacion: nuevo estado ->")
-      IO.inspect estadoSA
+      # IO.puts("FIN procesa_operacion: nuevo estado ->")
+      # IO.inspect estadoSA
 
 
       new_estado
@@ -145,14 +177,17 @@ defmodule ServidorSA do
     #de si el nodo es primario, copia o espera y de si la ultima vista que tiene el nodo
     #es valida o no.
     def procesa_late(nodo_servidor_gv, estadoSA) do
-      {vista, valida} = if estadoSA.valida == 1 or estadoSA.vista.primario != Node.self() do
-           IO.puts("valida 1 or ! primario")
+      #IO.puts("------INICIO--------")
+      #IO.inspect estadoSA
+      {vista, valida} = if estadoSA.valida or estadoSA.vista.primario != Node.self() do
+           #IO.puts("IF")
            {vista, valida} = ClienteGV.latido(nodo_servidor_gv, estadoSA.vista.num_vista)
            IO.inspect vista
-           IO.inspect valida
            {vista, valida}
 
-      else #nodo es primario y vista no valida
+      else
+        #IO.puts("ELSE")
+        #nodo es primario y vista no valida
            # {vista, valida} = cond do
            #      estadoSA.vista.num_vista == 0 ->
            #          #primer latido
@@ -164,15 +199,12 @@ defmodule ServidorSA do
                     #latido cuando la vista no es válida
            {vista, valida} = ClienteGV.latido(nodo_servidor_gv, -1)
            {vista, valida}
-            end
+          #  end
       end
       #Se actualiza el estado de la vista
       new_estadoSA = Map.put(estadoSA, :vista, vista) |> Map.put(:valida, valida)
-      IO.inspect vista
-      IO.puts("nodo_servidor_gv")
-      IO.inspect nodo_servidor_gv
-      IO.puts("valida: ")
-      IO.inspect valida
+      # IO.puts("--------FINAL---------")
+      # IO.inspect new_estadoSA
 
       new_estadoSA
     end
@@ -180,7 +212,7 @@ defmodule ServidorSA do
     #El nodo primario transfiere su base de datos a el nodo copia (pid_copia)
     #Devuelve estadoSA actualizado
     def procesa_transf_total(nodo_servidor_gv, estadoSA, pid_copia) do
-      IO.puts("INIT procesa_transf_total")
+      #IO.puts("INIT procesa_transf_total")
           if estadoSA.vista.primario == Node.self() do
             #primario transita a estado de transferencia de bd
             new_estadoSA = Map.put(estadoSA, :estado, :transf_prim)
@@ -215,6 +247,8 @@ defmodule ServidorSA do
                                       IO.puts("procesa_transfiere_a_copia: recivo ok_transf de la copia")
                                       ClienteGV.latido(nodo_servidor_gv, -1) #Pedimos la vista tentativa al gestor de vistas
           end
+          IO.puts("AQUIII: ")
+          IO.inspect vista.num_vista
           {vista, valida} = ClienteGV.latido(nodo_servidor_gv, vista.num_vista) #validamos vista
           #Se actualiza el estado de la vista
           new_estadoSA = Map.put(estadoSA, :vista, vista) |> Map.put(:valida, valida)
@@ -228,18 +262,23 @@ defmodule ServidorSA do
     #le pide al primario que le transfiera una copia exacta de su base de datos
     #y devuelve el estadoSA actualizado, en caso contrario no hace nada
     def comprobar_si_soy_copia(nodo_servidor_gv, estadoSA) do
-      IO.puts("INIT comprobar_si_soy_copia")
-      if estadoSA.valida == 0 and estadoSA.vista.copia == Node.self() do
+      IO.puts("------INIT comprobar_si_soy_copia")
+      #IO.inspect estadoSA
+      if !estadoSA.valida and estadoSA.vista.copia == Node.self() do
+        IO.puts("comprobar_si_soy_copia: IF")
         #si la vista no se ha validado compruebo si soy la copia para iniciar la transferencia de datos
         new_estadoSA = Map.put(estadoSA, :estado, :transf_copia)
-        send(new_estadoSA.vista.primario, {:transf_total, self()}) #Pide la transferencia de la bd al primario
+        send({:servidor_sa, new_estadoSA.vista.primario}, {:transf_total, self()}) #Pide la transferencia de la bd al primario
         new_estadoSA = receive do
           {:bd, bd} -> #Copia recibe base_datos del primario y se la guarda
                 IO.puts("comprobar_si_soy_copia: recibido bd del primario")
+                IO.inspect bd
                 new_estadoSA = Map.put(new_estadoSA, :base_datos, bd)
         end
-        send(new_estadoSA.vista.primario, {:ok_transf}) #Envía confirmación al primario
+        send({:servidor_sa, new_estadoSA.vista.primario}, {:ok_transf}) #Envía confirmación al primario
         new_estadoSA = Map.put(new_estadoSA, :estado, :init) #La copia transita a su estado inicial tras completar la transferencia de la bd
+        IO.puts("------FINAL----")
+      #  IO.inspect estadoSA
         new_estadoSA
       else
         estadoSA
@@ -253,22 +292,34 @@ defmodule ServidorSA do
   def procesa_operacion_primario(estadoSA, op, param, nodo_origen) do
     IO.puts("INIT procesa_operacion_primario")
         #caso :no_soy_primario_valido?????????????????????
-        {new_estadoSA, valor} = operacion(estadoSA, op, param)
-        IO.puts("OPERACION DEL PRIMARIO-----------")
-        IO.inspect op
-        IO.inspect param
-        IO.inspect nodo_origen
-        IO.puts("RESULTADO:")
-        IO.inspect valor
-        IO.puts("---------------------------------")
+        # IO.puts("OPERACION DEL PRIMARIO-----------")
+        # IO.inspect op
+        # IO.inspect param
+        # IO.inspect nodo_origen
+        # IO.puts("RESULTADO:")
+        # IO.inspect valor
+        # IO.inspect estadoSA
+        # IO.puts("---------------------------------")
         if op != :lee do
           #reenvía solicitud a la copia para que la procese
-          send({:servidor_sa, new_estadoSA.vista.copia}, {:transf_parcial, Node.self(), param})
-          receive do
-                {:ok_solicitud} -> send(nodo_origen, {:resultado, valor}) #envía resultado al cliente
-          end
+          send({:servidor_sa, estadoSA.vista.copia}, {:transf_parcial, Node.self(), param})
+          new_estadoSA = receive do
+                {:ok_solicitud} ->
+                  IO.puts("procesa_solicitud_primario: copia confirma operacion")
+                  {new_estadoSA, valor} = operacion(estadoSA, op, param)
+                  send({:cliente_sa, nodo_origen}, {:resultado, valor}) #envía resultado al cliente
+                  new_estadoSA
+                after @tiempo_espera_a_copia ->
+                        IO.puts("COPIA NO RESPONDE A REDIRECCION DE PETICION")
+                        send({:cliente_sa, nodo_origen}, {:resultado, :no_soy_primario_valido})
+                        estadoSA
+                end
+
+        else
+          {new_estadoSA, valor} = operacion(estadoSA, op, param)
+          send({:cliente_sa, nodo_origen}, {:resultado, valor}) #envía resultado al cliente
+          new_estadoSA
         end
-        new_estadoSA
   end
 
   #Ejecución de una operación de lectura en un nodo copia
@@ -283,7 +334,7 @@ defmodule ServidorSA do
 
         if op == :lee do #Solo admite lecturas
           {new_estadoSA, valor} = operacion(estadoSA, op, param)
-          send(nodo_origen, {:resultado, valor}) #envía resultado al cliente
+          send({:cliente_sa, nodo_origen}, {:resultado, valor}) #envía resultado al cliente
           IO.puts("RESULTADO:")
           IO.inspect valor
           IO.puts("---------------------------------")
@@ -317,11 +368,12 @@ defmodule ServidorSA do
   #Devuelve el valor asociado a la clave en estadoSA.base_datos o ""
   #si no existe la clave
   def leer(estadoSA, clave) do
-    if Map.has_key?(estadoSA.base_datos, clave) do
-        Map.get(estadoSA.base_datos, clave)
+    resul = if Map.has_key?(estadoSA.base_datos, clave) do
+        resul = Map.get(estadoSA.base_datos, clave)
     else
-      ""
+        resul = ""
     end
+    resul
   end
 
   #Actualiza en estadoSA.base_datos el valor asociado a clave
