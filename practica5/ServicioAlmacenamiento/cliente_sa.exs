@@ -1,3 +1,9 @@
+# AUTORES: José Manuel Vidarte Llera, Diego Marco Beisty
+# NIAs: 739729, 755232
+# FICHERO: cliente_sa.exs
+# FECHA: 13-1-2020
+# DESCRIPCION: Cliente de un servidor de almacenamiento clave / valor
+
 Code.require_file("#{__DIR__}/cliente_gv.exs")
 
 defmodule ClienteSA do
@@ -46,16 +52,10 @@ defmodule ClienteSA do
     """
     @spec lee( node(), String.t ) :: String.t
     def lee(nodo_cliente, clave) do
-        IO.puts("lee INIT")
-        IO.puts("test lee en")
-        IO.inspect nodo_cliente
-        IO.puts(clave)
         send({:cliente_sa, nodo_cliente}, {:lee, clave, self()})
 
         receive do
-            {:resultado, valor} ->IO.puts("Respuesta:")
-                                  IO.inspect valor
-                                  valor
+            {:resultado, valor} ->  valor
 
             _otro -> exit("ERROR de programa : funcion lee en modulo CLienteSA")
         end
@@ -65,9 +65,7 @@ defmodule ClienteSA do
         send({:cliente_sa, nodo_cliente}, {:lee, clave, self(), nodo_destino})
 
         receive do
-            {:resultado, valor} ->IO.puts("Respuesta:")
-                                  IO.inspect valor
-                                  valor
+            {:resultado, valor} ->  valor
 
             _otro -> exit("ERROR de programa : funcion lee en modulo CLienteSA")
         end
@@ -84,18 +82,10 @@ defmodule ClienteSA do
     """
     @spec escribe_generico( node(), String.t, String.t, boolean ) :: String.t
     def escribe_generico(nodo_cliente, clave, nuevo_valor, con_hash) do
-       IO.puts("escribe_generico INIT")
         send({:cliente_sa, nodo_cliente}, {:escribe_generico,
                                         {clave, nuevo_valor, con_hash}, self()})
-        IO.puts("test escribe en")
-        IO.inspect nodo_cliente
-        IO.puts(clave)
-        IO.puts(nuevo_valor)
-        IO.inspect con_hash
         receive do
             {:resultado, valor} -> valor
-            IO.puts("Respuesta:")
-            IO.inspect valor
             otro ->
                 :io.format "otro en ClienteSA.escribe_generico : ~p~n", [otro]
 
@@ -155,10 +145,8 @@ defmodule ClienteSA do
 
         case p do
             :undefined ->  # esperamos un rato si aparece primario
-                IO.puts("realizar_operacion: ESPERANDO RECONFIG PRIMARIO ANTES")
                 #Process.sleep(ServidorGV.intervalo_latidos())
                 Process.sleep(50)
-                IO.puts("realizar_operacion: ESPERANDO RECONFIG PRIMARIO DESPUES")
 
                 realizar_operacion(op, param, servidor_gv)
 
@@ -168,7 +156,6 @@ defmodule ClienteSA do
                 # recuperar resultado
                 receive do
                     {:resultado, :no_soy_primario_valido} ->
-                        IO.puts("ERROR: :no_soy_primario_valido")
                         realizar_operacion(op, param, servidor_gv)
 
                     {:resultado, valor} ->
@@ -177,7 +164,6 @@ defmodule ClienteSA do
                 # Sin resultado en tiempo establecido ?
                 # -> se vuelve a pedir operacion al primario en curso
                 after ServidorGV.intervalo_latidos() ->
-                  IO.puts("ERROR: HA CADUCADO TIMEOUT OP")
                     realizar_operacion(op, param, servidor_gv)
                 end
         end
@@ -192,7 +178,6 @@ defmodule ClienteSA do
                         valor
 
                 after ServidorGV.intervalo_latidos() ->
-                  IO.puts("ERROR")
                     realizar_operacion(op, param, servidor_gv)
                 end
     end

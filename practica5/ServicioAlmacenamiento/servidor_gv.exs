@@ -1,9 +1,8 @@
-:servidor_sa# Para utilizar IEx.pry
 # AUTORES: José Manuel Vidarte Llera, Diego Marco Beisty
 # NIAs: 739729, 755232
 # FICHERO: escenario3.ex
 # FECHA: 15-12-2019
-# DESCRIPCIÓN: Código del servidor de vistas
+# DESCRIPCIÓN: Servidor de vistas para una arquitectura primario/copia
 
 defmodule ServidorGV do
   @moduledoc """
@@ -70,7 +69,6 @@ defmodule ServidorGV do
 
   # Estas 2 primeras deben ser defs para llamadas tipo (MODULE, funcion,[])
   def init_sv() do
-    IO.puts("INIT GESTOR_VISTAS")
     Process.register(self(), :servidor_gv)
     # otro proceso concurrente
     spawn(__MODULE__, :init_monitor, [self()])
@@ -88,18 +86,13 @@ defmodule ServidorGV do
     {new_estadoGV, timeouts_primario, timeouts_copia} =
       receive do
         {:obten_vista_valida, pid} ->
-          IO.puts("PETICION VISTA VALIDA EN BUCLE")
           send(pid, {:vista_valida, estadoGV.vista_v, estadoGV.valida})
           {estadoGV, timeouts_primario, timeouts_copia}
 
         {:latido, n_vista_latido, nodo_emisor} ->
-          IO.puts("bucle: latido")
-          IO.puts(nodo_emisor)
-          IO.inspect n_vista_latido
-          IO.inspect estadoGV
           procesar_latido(estadoGV, timeouts_primario, timeouts_copia,
           n_vista_latido, nodo_emisor)
-          
+
         :procesa_situacion_servidores ->
           procesar_situacion_servidores(estadoGV, timeouts_primario + 1, timeouts_copia + 1)
       end
@@ -117,8 +110,6 @@ defmodule ServidorGV do
             {:primario, nodo_emisor},
             {:estado, :wait_copia}
           ])
-        IO.puts("---------------procesar_latido:")
-        IO.inspect new_estadoGV
         send(
           {:servidor_sa, nodo_emisor},
           {:vista_tentativa, new_estadoGV.vista_t, new_estadoGV.valida}
@@ -430,7 +421,6 @@ defmodule ServidorGV do
   end
 
   def caida_copia(estadoGV) do
-    IO.puts("CAIDA DE LA COPIA ->")
 
     if estadoGV.nodos_espera == [] do
       update_estadoGV(estadoGV, [{:num_vista}, {:copia, :undefined}])
@@ -445,7 +435,6 @@ defmodule ServidorGV do
   end
 
   def caida_primario(estadoGV) do
-    IO.puts("CAIDA DEL PRIMARIO ->")
     if estadoGV.nodos_espera == [] do
       update_estadoGV(estadoGV, [
         {:num_vista},
@@ -464,7 +453,6 @@ defmodule ServidorGV do
   end
 
   def caida_primario_sin_copia(estadoGV) do
-    IO.puts("CAIDA DEL PRIMARIO SIN COPIA ->")
 
     new_vista_t =
       Map.put(estadoGV.vista_t, :num_vista, 0)

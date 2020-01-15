@@ -243,11 +243,8 @@ defmodule  ServicioAlmacenamientoTest do
          # Forzar caida copia
          NodoRemoto.stop(mapa_nodos.sa2)
 
-
-
-                  #Escritura inmediata
+        #Escritura inmediata
          ClienteSA.escribe(mapa_nodos.ca1, "a", "aa")
-
 
          comprobar(mapa_nodos.ca1, "a", "aa")
 
@@ -292,10 +289,14 @@ defmodule  ServicioAlmacenamientoTest do
       # Esperar detección fallo y reconfiguración copia a primario
       Process.sleep(700)
 
-      mapa_nodosDos = startServidores([],["sa1"],@maquinas)
+      #Reiniciamos el antiguo primario
+      #mapa_nodosDos = startServidores([],["sa1"],@maquinas)
+      mapa_nodosDos = startServidoresSA(["sa1"],@maquinas)
 
+      #Mandamos operacion de lectura al antiguo primario
       valorAprimario = ClienteSA.lee(mapa_nodos.ca1, "0", mapa_nodosDos.sa1)
 
+      #Comprobamos que el antiguo primario no ha ejecutado la operacion
       assert valorAprimario == :soy_nodo_en_espera
 
       # Parar todos los nodos y epmds
@@ -341,6 +342,28 @@ defmodule  ServicioAlmacenamientoTest do
         IO.puts("Tiempo puesta en marcha de nodos  : #{t_total}")
 
         %{gv: sv} |> Map.merge(clientesAlm) |> Map.merge(servAlm)
+    end
+
+    defp startServidoresSA(serv_alm, maquinas) do
+        tiempo_antes = :os.system_time(:milli_seconds)
+        sv = :"sv@127.0.0.1"
+
+        # Mapa con nodos servidores almacenamiento
+        servAlm = for {s, m} <-  Enum.zip(serv_alm, maquinas), into: %{} do
+                      {String.to_atom(s),
+                       ServidorSA.startNodo(s, m)}
+                  end
+        # Poner en marcha servicios de cada nodo servidor de almacenamiento
+        for { _, n} <- servAlm do
+            ServidorSA.startService(n, sv)
+            #Process.sleep(60)
+        end
+
+        #Tiempo de puesta en marcha de nodos
+        t_total = :os.system_time(:milli_seconds) - tiempo_antes
+        IO.puts("Tiempo puesta en marcha de nodos  : #{t_total}")
+
+        Map.merge(%{}, servAlm)
     end
 
 
